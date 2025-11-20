@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 
 import 'connectivity_service.dart';
@@ -13,58 +14,41 @@ class OfflineSyncService {
 
   final ConnectivityService _connectivityService = ConnectivityService();
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  final MeterReadingService _meterReadingService = MeterReadingService();
 
   StreamSubscription<bool>? _connectivitySubscription;
-  Timer? _syncTimer;
-  bool _isSyncing = false;
+  SendPort? _isolateSendPort;
+  Isolate? _isolate;
 
   Future<void> initialize() async {
     await _connectivityService.initialize();
 
+    // Spawn the background isolate
+    ReceivePort receivePort = ReceivePort();
+    _isolate = await Isolate.spawn(_isolateEntry, receivePort.sendPort);
+    _isolateSendPort = await receivePort.first as SendPort;
+
     // Listen for connectivity changes
     _connectivitySubscription = _connectivityService.connectivityStream.listen((isOnline) {
-      if (isOnline) {
-        // Start syncing when coming online
-        _startSyncTimer();
-      } else {
-        // Stop syncing when going offline
-        _stopSyncTimer();
-      }
+      _isolateSendPort?.send(isOnline ? 'online' : 'offline');
     });
 
-    // Start initial sync if online
+    // Send initial state
     if (_connectivityService.isOnline) {
-      _startSyncTimer();
+      _isolateSendPort?.send('online');
     }
   }
 
-  void _startSyncTimer() {
-    _stopSyncTimer(); // Stop any existing timer
-    _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _syncPendingReadings();
-    });
-    // Also sync immediately
-    _syncPendingReadings();
-  }
 
-  void _stopSyncTimer() {
-    _syncTimer?.cancel();
-    _syncTimer = null;
-  }
-
-  Future<void> _syncPendingReadings() async {
-    if (_isSyncing || !_connectivityService.isOnline) return;
-
-    _isSyncing = true;
+  static Future<void> _syncPendingReadings(DatabaseHelper dbHelper, MeterReadingService meterReadingService, bool isOnline) async {
+    if (!isOnline) return;
 
     try {
-      final pendingReadings = await _dbHelper.getPendingReadings();
+      final pendingReadings = await dbHelper.getPendingReadings();
 
       for (final reading in pendingReadings) {
         try {
           // Update status to uploading
-          await _dbHelper.updateReadingStatus(reading['id'], 'uploading');
+          await dbHelper.updateReadingStatus(reading['id'], 'uploading');
 
           // Prepare data for upload
           final userId = reading['user_id'] as int;
@@ -91,7 +75,7 @@ class OfflineSyncService {
           }
 
           // Upload to server
-          await _meterReadingService.uploadReading(
+          await meterReadingService.uploadReading(
             userId: userId,
             readingValue: readingValue,
             readingDate: readingDate,
@@ -101,19 +85,17 @@ class OfflineSyncService {
           );
 
           // Delete from local database on success
-          await _dbHelper.deleteReading(reading['id']);
+          await dbHelper.deleteReading(reading['id']);
 
           debugPrint('Successfully synced reading ${reading['id']}');
         } catch (e) {
           // Mark as failed and continue with next reading
-          await _dbHelper.updateReadingStatus(reading['id'], 'failed');
+          await dbHelper.updateReadingStatus(reading['id'], 'failed');
           debugPrint('Failed to sync reading ${reading['id']}: $e');
         }
       }
     } catch (e) {
       debugPrint('Error during sync: $e');
-    } finally {
-      _isSyncing = false;
     }
   }
 
@@ -144,7 +126,7 @@ class OfflineSyncService {
 
     // Try to sync immediately if online
     if (_connectivityService.isOnline) {
-      _syncPendingReadings();
+      _isolateSendPort?.send('sync_now');
     }
   }
 
@@ -167,13 +149,55 @@ class OfflineSyncService {
 
     // Try to sync if online
     if (_connectivityService.isOnline) {
-      _syncPendingReadings();
+      _isolateSendPort?.send('sync_now');
     }
   }
 
   void dispose() {
     _connectivitySubscription?.cancel();
-    _stopSyncTimer();
+    _isolateSendPort?.send('dispose');
+    _isolate?.kill();
     _connectivityService.dispose();
+  }
+
+  static void _isolateEntry(SendPort sendPort) {
+    ReceivePort receivePort = ReceivePort();
+    sendPort.send(receivePort.sendPort);
+
+    final dbHelper = DatabaseHelper.instance;
+    final meterReadingService = MeterReadingService();
+
+    Timer? syncTimer;
+    bool isOnline = false;
+
+    void startSyncTimer() {
+      syncTimer?.cancel();
+      syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        _syncPendingReadings(dbHelper, meterReadingService, isOnline);
+      });
+      _syncPendingReadings(dbHelper, meterReadingService, isOnline);
+    }
+
+    void stopSyncTimer() {
+      syncTimer?.cancel();
+      syncTimer = null;
+    }
+
+    receivePort.listen((message) {
+      if (message == 'online') {
+        isOnline = true;
+        startSyncTimer();
+      } else if (message == 'offline') {
+        isOnline = false;
+        stopSyncTimer();
+      } else if (message == 'sync_now') {
+        if (isOnline) {
+          _syncPendingReadings(dbHelper, meterReadingService, isOnline);
+        }
+      } else if (message == 'dispose') {
+        stopSyncTimer();
+        receivePort.close();
+      }
+    });
   }
 }
