@@ -83,7 +83,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Container(
         height: 40,
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.2),
+          color: colorScheme.surface.withOpacity(0.2),
           borderRadius: BorderRadius.circular(20),
         ),
         child: TextField(
@@ -96,14 +96,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           decoration: InputDecoration(
             hintText: 'Search...',
             hintStyle: GoogleFonts.inter(
-              color: (foregroundColor ?? colorScheme.onPrimary)
-                  .withValues(alpha: 0.7),
+              color:
+                  (foregroundColor ?? colorScheme.onPrimary).withOpacity(0.7),
               fontSize: 14,
             ),
             prefixIcon: Icon(
               Icons.search,
-              color: (foregroundColor ?? colorScheme.onPrimary)
-                  .withValues(alpha: 0.7),
+              color:
+                  (foregroundColor ?? colorScheme.onPrimary).withOpacity(0.7),
               size: 20,
             ),
             border: InputBorder.none,

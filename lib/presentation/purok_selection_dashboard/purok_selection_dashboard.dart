@@ -129,8 +129,8 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
       body: Column(
         children: [
           DashboardHeaderWidget(
-            userName: "Juan Dela Cruz",
-            currentDate: "Thursday, December 05, 2025",
+            userName: "Reynold Repdos",
+            currentDate: DateTime.now().toLocal().toString().split('.').first,
             isSynced: _isSynced,
             onSyncTap: _handleSync,
           ),

@@ -24,7 +24,7 @@ class ProfileHeaderWidget extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             AppTheme.lightTheme.colorScheme.primary,
-            AppTheme.lightTheme.colorScheme.primary.withValues(alpha: 0.8),
+            AppTheme.lightTheme.colorScheme.primary.withOpacity(0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(3.w),
@@ -92,8 +92,7 @@ class ProfileHeaderWidget extends StatelessWidget {
           Text(
             "Employee ID: ${userData["employeeId"] as String? ?? "N/A"}",
             style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.lightTheme.colorScheme.onPrimary
-                  .withValues(alpha: 0.9),
+              color: AppTheme.lightTheme.colorScheme.onPrimary.withOpacity(0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -101,8 +100,7 @@ class ProfileHeaderWidget extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
             decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.onPrimary
-                  .withValues(alpha: 0.2),
+              color: AppTheme.lightTheme.colorScheme.onPrimary.withOpacity(0.2),
               borderRadius: BorderRadius.circular(2.w),
             ),
             child: Text(

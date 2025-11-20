@@ -7,9 +7,9 @@ import '../../widgets/custom_icon_widget.dart';
 import './widgets/barangay_logo_widget.dart';
 import './widgets/biometric_login_widget.dart';
 import './widgets/login_form_widget.dart';
-import 'widgets/barangay_logo_widget.dart';
-import 'widgets/biometric_login_widget.dart';
-import 'widgets/login_form_widget.dart';
+// import 'widgets/barangay_logo_widget.dart';
+// import 'widgets/biometric_login_widget.dart';
+// import 'widgets/login_form_widget.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -245,49 +245,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 4.h),
 
                   // Demo Credentials Info
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(3.w),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CustomIconWidget(
-                              iconName: 'info_outline',
-                              color: colorScheme.primary,
-                              size: 4.w,
-                            ),
-                            SizedBox(width: 2.w),
-                            Text(
-                              'Demo Credentials',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 1.h),
-                        Text(
-                          'Admin: admin / admin123\nReader: reader01 / reader123\nSupervisor: supervisor / super123',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
-                            fontSize: 10.sp,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Container(
+                  //   width: double.infinity,
+                  //   padding: EdgeInsets.all(3.w),
+                  //   decoration: BoxDecoration(
+                  //     color: colorScheme.primary.withValues(alpha: 0.05),
+                  //     borderRadius: BorderRadius.circular(8),
+                  //     border: Border.all(
+                  //       color: colorScheme.primary.withValues(alpha: 0.2),
+                  //     ),
+                  //   ),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Row(
+                  //         children: [
+                  //           CustomIconWidget(
+                  //             iconName: 'info_outline',
+                  //             color: colorScheme.primary,
+                  //             size: 4.w,
+                  //           ),
+                  //           SizedBox(width: 2.w),
+                  //           Text(
+                  //             'Demo Credentials',
+                  //             style: theme.textTheme.labelMedium?.copyWith(
+                  //               color: colorScheme.primary,
+                  //               fontWeight: FontWeight.w600,
+                  //               fontSize: 11.sp,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //       SizedBox(height: 1.h),
+                  //       Text(
+                  //         'Admin: admin / admin123\nReader: reader01 / reader123\nSupervisor: supervisor / super123',
+                  //         style: theme.textTheme.bodySmall?.copyWith(
+                  //           color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  //           fontSize: 10.sp,
+                  //           height: 1.4,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
 
                   SizedBox(height: 4.h),
                 ],

@@ -36,7 +36,7 @@ class SearchFilterBarWidget extends StatelessWidget {
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.2),
+                color: colorScheme.outline.withOpacity(0.2),
               ),
             ),
             child: TextField(
@@ -46,13 +46,13 @@ class SearchFilterBarWidget extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Search by name, address, or meter number...',
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: colorScheme.onSurface.withOpacity(0.6),
                 ),
                 prefixIcon: Padding(
                   padding: EdgeInsets.all(3.w),
                   child: CustomIconWidget(
                     iconName: 'search',
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: colorScheme.onSurface.withOpacity(0.6),
                     size: 20,
                   ),
                 ),
@@ -64,7 +64,7 @@ class SearchFilterBarWidget extends StatelessWidget {
                         },
                         icon: CustomIconWidget(
                           iconName: 'clear',
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: colorScheme.onSurface.withOpacity(0.6),
                           size: 20,
                         ),
                       )
@@ -74,7 +74,7 @@ class SearchFilterBarWidget extends StatelessWidget {
                           iconName: 'tune',
                           color: activeFilters.isNotEmpty
                               ? colorScheme.primary
-                              : colorScheme.onSurface.withValues(alpha: 0.6),
+                              : colorScheme.onSurface.withOpacity(0.6),
                           size: 20,
                         ),
                       ),
@@ -119,10 +119,9 @@ class SearchFilterBarWidget extends StatelessWidget {
                           ],
                         ),
                         onSelected: (_) => onClearFilters?.call(),
-                        backgroundColor:
-                            colorScheme.error.withValues(alpha: 0.1),
+                        backgroundColor: colorScheme.error.withOpacity(0.1),
                         side: BorderSide(
-                          color: colorScheme.error.withValues(alpha: 0.3),
+                          color: colorScheme.error.withOpacity(0.3),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -146,11 +145,10 @@ class SearchFilterBarWidget extends StatelessWidget {
                       onSelected: (_) {
                         // Handle individual filter removal
                       },
-                      backgroundColor:
-                          colorScheme.primary.withValues(alpha: 0.1),
-                      selectedColor: colorScheme.primary.withValues(alpha: 0.1),
+                      backgroundColor: colorScheme.primary.withOpacity(0.1),
+                      selectedColor: colorScheme.primary.withOpacity(0.1),
                       side: BorderSide(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        color: colorScheme.primary.withOpacity(0.3),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),

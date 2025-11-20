@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sizer/sizer.dart';
+import 'dart:io';
 
 import '../../core/app_export.dart';
 import './widgets/action_buttons_section.dart';
@@ -12,6 +13,7 @@ import './widgets/gps_location_section.dart';
 import './widgets/homeowner_info_card.dart';
 import './widgets/notes_section.dart';
 import './widgets/reading_input_section.dart';
+import '../../core/meter_reading_service.dart';
 
 class MeterReadingEntry extends StatefulWidget {
   const MeterReadingEntry({super.key});
@@ -135,51 +137,57 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
     });
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Validate required fields locally before sending
+      final userId = _homeownerData['id'] as int?;
+      if (userId == null || userId <= 0)
+        throw Exception('Invalid homeowner id');
 
-      final readingData = {
-        'homeownerId': _homeownerData['id'],
-        'accountNumber': _homeownerData['accountNumber'],
-        'previousReading': _homeownerData['previousReading'],
-        'currentReading': _currentReading,
-        'consumption':
-            _currentReading - (_homeownerData['previousReading'] as double),
-        'notes': _notesController.text,
-        'imagePath': _capturedImage?.path,
-        'gpsLocation': _gpsLocation != null
-            ? {
-                'latitude': _gpsLocation!.latitude,
-                'longitude': _gpsLocation!.longitude,
-                'accuracy': _gpsLocation!.accuracy,
-              }
-            : null,
-        'timestamp': DateTime.now().toIso8601String(),
-        'readingType': 'actual',
-        'status': 'completed',
-      };
+      // prepare optional image file
+      File? imageFile;
+      if (_capturedImage != null) {
+        imageFile = File(_capturedImage!.path);
+      }
 
-      // In a real app, this would send to API and save to local database
-      debugPrint('Saved reading data: $readingData');
+      final gps = _gpsLocation != null
+          ? {
+              'latitude': _gpsLocation!.latitude,
+              'longitude': _gpsLocation!.longitude,
+              'accuracy': _gpsLocation!.accuracy,
+            }
+          : null;
+
+      // Call service
+      final service = MeterReadingService();
+      final result = await service.uploadReading(
+        userId: userId,
+        readingValue: _currentReading,
+        readingDate: DateTime.now(),
+        imageFile: imageFile,
+        gpsLocation: gps,
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
+      );
+
+      debugPrint('Upload result: $result');
 
       setState(() {
         _hasUnsavedChanges = false;
       });
 
       Fluttertoast.showToast(
-        msg: "Reading saved successfully!",
+        msg: "Reading uploaded successfully!",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
 
-      // Navigate to billing receipt generation
+      // Navigate to billing receipt generation (server may return created id/details)
       Navigator.pushReplacementNamed(context, '/billing-receipt-generation');
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Failed to upload reading: $e\n$st');
       Fluttertoast.showToast(
-        msg: "Failed to save reading. Please try again.",
-        toastLength: Toast.LENGTH_SHORT,
+        msg: "Failed to save reading: ${e.toString()}",
+        toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
         textColor: Colors.white,

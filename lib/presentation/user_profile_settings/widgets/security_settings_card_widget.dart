@@ -202,8 +202,7 @@ class _SecuritySettingsCardWidgetState
                 width: 10.w,
                 height: 10.w,
                 decoration: BoxDecoration(
-                  color: AppTheme.lightTheme.colorScheme.error
-                      .withValues(alpha: 0.1),
+                  color: AppTheme.lightTheme.colorScheme.error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(2.w),
                 ),
                 child: Center(
@@ -229,7 +228,7 @@ class _SecuritySettingsCardWidgetState
                       subtitle,
                       style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.lightTheme.colorScheme.onSurface
-                            .withValues(alpha: 0.7),
+                            .withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -263,8 +262,7 @@ class _SecuritySettingsCardWidgetState
             width: 10.w,
             height: 10.w,
             decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.tertiary
-                  .withValues(alpha: 0.1),
+              color: AppTheme.lightTheme.colorScheme.tertiary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(2.w),
             ),
             child: Center(
@@ -290,7 +288,7 @@ class _SecuritySettingsCardWidgetState
                   subtitle,
                   style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                     color: AppTheme.lightTheme.colorScheme.onSurface
-                        .withValues(alpha: 0.7),
+                        .withOpacity(0.7),
                   ),
                 ),
               ],
@@ -322,8 +320,7 @@ class _SecuritySettingsCardWidgetState
             width: 10.w,
             height: 10.w,
             decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.secondary
-                  .withValues(alpha: 0.1),
+              color: AppTheme.lightTheme.colorScheme.secondary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(2.w),
             ),
             child: Center(

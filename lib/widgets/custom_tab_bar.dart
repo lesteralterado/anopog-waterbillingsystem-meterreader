@@ -64,8 +64,8 @@ class CustomTabBar extends StatelessWidget implements PreferredSizeWidget {
         isScrollable: isScrollable,
         indicatorColor: indicatorColor ?? colorScheme.primary,
         labelColor: labelColor ?? colorScheme.primary,
-        unselectedLabelColor: unselectedLabelColor ??
-            colorScheme.onSurface.withValues(alpha: 0.6),
+        unselectedLabelColor:
+            unselectedLabelColor ?? colorScheme.onSurface.withOpacity(0.6),
         labelStyle: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -91,8 +91,8 @@ class CustomTabBar extends StatelessWidget implements PreferredSizeWidget {
         isScrollable: true,
         indicatorColor: indicatorColor ?? colorScheme.primary,
         labelColor: labelColor ?? colorScheme.primary,
-        unselectedLabelColor: unselectedLabelColor ??
-            colorScheme.onSurface.withValues(alpha: 0.6),
+        unselectedLabelColor:
+            unselectedLabelColor ?? colorScheme.onSurface.withOpacity(0.6),
         labelStyle: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -129,8 +129,8 @@ class CustomTabBar extends StatelessWidget implements PreferredSizeWidget {
           indicatorSize: TabBarIndicatorSize.tab,
           indicatorPadding: const EdgeInsets.all(4),
           labelColor: labelColor ?? colorScheme.onPrimary,
-          unselectedLabelColor: unselectedLabelColor ??
-              colorScheme.onSurface.withValues(alpha: 0.8),
+          unselectedLabelColor:
+              unselectedLabelColor ?? colorScheme.onSurface.withOpacity(0.8),
           labelStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -178,7 +178,7 @@ class CustomTabBar extends StatelessWidget implements PreferredSizeWidget {
                     border: Border.all(
                       color: isSelected
                           ? (indicatorColor ?? colorScheme.primary)
-                          : colorScheme.outline.withValues(alpha: 0.3),
+                          : colorScheme.outline.withOpacity(0.3),
                     ),
                   ),
                   child: Text(
@@ -190,7 +190,7 @@ class CustomTabBar extends StatelessWidget implements PreferredSizeWidget {
                       color: isSelected
                           ? (labelColor ?? colorScheme.onPrimary)
                           : (unselectedLabelColor ??
-                              colorScheme.onSurface.withValues(alpha: 0.8)),
+                              colorScheme.onSurface.withOpacity(0.8)),
                     ),
                   ),
                 ),
@@ -225,7 +225,7 @@ class CustomTabBarView extends StatelessWidget {
     return TabBarView(
       controller: controller,
       dragStartBehavior: dragStartBehavior,
-      viewportFraction: viewportFraction,
+      viewportFraction: viewportFraction ?? 1.0,
       children: children,
     );
   }

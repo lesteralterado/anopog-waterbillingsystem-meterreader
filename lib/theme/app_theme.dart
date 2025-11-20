@@ -76,7 +76,7 @@ class AppTheme {
       onSecondaryContainer: onSecondaryLight,
       tertiary: successLight,
       onTertiary: onPrimaryLight,
-      tertiaryContainer: successLight.withValues(alpha: 0.1),
+      tertiaryContainer: successLight.withOpacity(0.1),
       onTertiaryContainer: successLight,
       error: errorLight,
       onError: onErrorLight,
@@ -84,7 +84,7 @@ class AppTheme {
       onSurface: onSurfaceLight,
       onSurfaceVariant: textMediumEmphasisLight,
       outline: dividerLight,
-      outlineVariant: dividerLight.withValues(alpha: 0.5),
+      outlineVariant: dividerLight.withOpacity(0.5),
       shadow: shadowLight,
       scrim: shadowLight,
       inverseSurface: surfaceDark,
@@ -114,7 +114,7 @@ class AppTheme {
         size: 24,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: cardLight,
       elevation: 2.0,
       shadowColor: shadowLight,
@@ -230,35 +230,35 @@ class AppTheme {
       ),
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      thumbColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryLight;
         }
         return Colors.grey[300];
       }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return primaryLight.withValues(alpha: 0.5);
+      trackColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
+          return primaryLight.withOpacity(0.5);
         }
         return Colors.grey[400];
       }),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryLight;
         }
         return Colors.transparent;
       }),
-      checkColor: WidgetStateProperty.all(onPrimaryLight),
+      checkColor: MaterialStateProperty.all(onPrimaryLight),
       side: const BorderSide(color: dividerLight, width: 2.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4.0),
       ),
     ),
     radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryLight;
         }
         return dividerLight;
@@ -272,7 +272,7 @@ class AppTheme {
     sliderTheme: SliderThemeData(
       activeTrackColor: primaryLight,
       thumbColor: primaryLight,
-      overlayColor: primaryLight.withValues(alpha: 0.2),
+      overlayColor: primaryLight.withOpacity(0.2),
       inactiveTrackColor: dividerLight,
       valueIndicatorColor: primaryLight,
       valueIndicatorTextStyle: GoogleFonts.inter(
@@ -281,7 +281,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
       ),
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: primaryLight,
       unselectedLabelColor: textMediumEmphasisLight,
       indicatorColor: primaryLight,
@@ -297,7 +297,7 @@ class AppTheme {
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: onSurfaceLight.withValues(alpha: 0.9),
+        color: onSurfaceLight.withOpacity(0.9),
         borderRadius: BorderRadius.circular(6),
       ),
       textStyle: GoogleFonts.inter(
@@ -322,8 +322,8 @@ class AppTheme {
       elevation: 6.0,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: dividerLight.withValues(alpha: 0.2),
-      selectedColor: primaryLight.withValues(alpha: 0.2),
+      backgroundColor: dividerLight.withOpacity(0.2),
+      selectedColor: primaryLight.withOpacity(0.2),
       labelStyle: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
@@ -332,7 +332,8 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
       ),
-    ), dialogTheme: DialogThemeData(backgroundColor: dialogLight),
+    ),
+    dialogTheme: DialogThemeData(backgroundColor: dialogLight),
   );
 
   /// Dark theme
@@ -350,7 +351,7 @@ class AppTheme {
       onSecondaryContainer: onSecondaryDark,
       tertiary: successDark,
       onTertiary: onPrimaryDark,
-      tertiaryContainer: successDark.withValues(alpha: 0.2),
+      tertiaryContainer: successDark.withOpacity(0.2),
       onTertiaryContainer: successDark,
       error: errorDark,
       onError: onErrorDark,
@@ -358,7 +359,7 @@ class AppTheme {
       onSurface: onSurfaceDark,
       onSurfaceVariant: textMediumEmphasisDark,
       outline: dividerDark,
-      outlineVariant: dividerDark.withValues(alpha: 0.5),
+      outlineVariant: dividerDark.withOpacity(0.5),
       shadow: shadowDark,
       scrim: shadowDark,
       inverseSurface: surfaceLight,
@@ -388,7 +389,7 @@ class AppTheme {
         size: 24,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: cardDark,
       elevation: 2.0,
       shadowColor: shadowDark,
@@ -504,35 +505,35 @@ class AppTheme {
       ),
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      thumbColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryDark;
         }
         return Colors.grey[600];
       }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return primaryDark.withValues(alpha: 0.5);
+      trackColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
+          return primaryDark.withOpacity(0.5);
         }
         return Colors.grey[700];
       }),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryDark;
         }
         return Colors.transparent;
       }),
-      checkColor: WidgetStateProperty.all(onPrimaryDark),
+      checkColor: MaterialStateProperty.all(onPrimaryDark),
       side: const BorderSide(color: dividerDark, width: 2.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4.0),
       ),
     ),
     radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
+      fillColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.selected)) {
           return primaryDark;
         }
         return dividerDark;
@@ -546,7 +547,7 @@ class AppTheme {
     sliderTheme: SliderThemeData(
       activeTrackColor: primaryDark,
       thumbColor: primaryDark,
-      overlayColor: primaryDark.withValues(alpha: 0.2),
+      overlayColor: primaryDark.withOpacity(0.2),
       inactiveTrackColor: dividerDark,
       valueIndicatorColor: primaryDark,
       valueIndicatorTextStyle: GoogleFonts.inter(
@@ -555,7 +556,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
       ),
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: primaryDark,
       unselectedLabelColor: textMediumEmphasisDark,
       indicatorColor: primaryDark,
@@ -571,7 +572,7 @@ class AppTheme {
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: onSurfaceDark.withValues(alpha: 0.9),
+        color: onSurfaceDark.withOpacity(0.9),
         borderRadius: BorderRadius.circular(6),
       ),
       textStyle: GoogleFonts.inter(
@@ -596,8 +597,8 @@ class AppTheme {
       elevation: 6.0,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: dividerDark.withValues(alpha: 0.2),
-      selectedColor: primaryDark.withValues(alpha: 0.2),
+      backgroundColor: dividerDark.withOpacity(0.2),
+      selectedColor: primaryDark.withOpacity(0.2),
       labelStyle: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
@@ -606,7 +607,8 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
       ),
-    ), dialogTheme: DialogThemeData(backgroundColor: dialogDark),
+    ),
+    dialogTheme: DialogThemeData(backgroundColor: dialogDark),
   );
 
   /// Helper method to build text theme based on brightness

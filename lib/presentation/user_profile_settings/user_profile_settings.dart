@@ -20,12 +20,12 @@ class _UserProfileSettingsState extends State<UserProfileSettings> {
   // Mock user data
   final Map<String, dynamic> _userData = {
     "id": "EMP001",
-    "name": "Juan Carlos Santos",
+    "name": "Reynold Repdos",
     "employeeId": "BRG-2024-001",
-    "phone": "+63 912 345 6789",
-    "email": "juan.santos@barangay.gov.ph",
+    "phone": "+63 961 817 9619",
+    "email": "reynold.repdos@barangay.gov.ph",
     "emergencyContact": "Maria Santos",
-    "emergencyPhone": "+63 917 123 4567",
+    "emergencyPhone": "+63 961 817 9619",
     "assignedPuroks": ["Purok 1", "Purok 2", "Purok 3"],
     "profileImage":
         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",

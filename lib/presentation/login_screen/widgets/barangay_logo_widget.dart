@@ -33,11 +33,17 @@ class BarangayLogoWidget extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CustomIconWidget(
-                  iconName: 'water_drop',
-                  color: colorScheme.onPrimary,
-                  size: 8.w,
-                ),
+                // CustomIconWidget(
+                //   iconName: 'water_drop',
+                //   color: colorScheme.onPrimary,
+                //   size: 8.w,
+                // ),
+                CustomImageWidget(
+                    imageUrl: "assets/images/logo.png",
+                    width: 10.w,
+                    height: 10.w,
+                    fit: BoxFit.cover,
+                  ),
                 SizedBox(height: 0.5.h),
                 Text(
                   'BRGY',

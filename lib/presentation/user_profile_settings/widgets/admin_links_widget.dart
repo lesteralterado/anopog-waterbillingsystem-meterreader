@@ -281,7 +281,7 @@ These terms and conditions are governed by and construed in accordance with the 
                 height: 10.w,
                 decoration: BoxDecoration(
                   color: AppTheme.lightTheme.colorScheme.secondary
-                      .withValues(alpha: 0.1),
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(2.w),
                 ),
                 child: Center(
@@ -307,7 +307,7 @@ These terms and conditions are governed by and construed in accordance with the 
                       subtitle,
                       style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.lightTheme.colorScheme.onSurface
-                            .withValues(alpha: 0.7),
+                            .withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -315,8 +315,8 @@ These terms and conditions are governed by and construed in accordance with the 
               ),
               CustomIconWidget(
                 iconName: 'chevron_right',
-                color: AppTheme.lightTheme.colorScheme.onSurface
-                    .withValues(alpha: 0.5),
+                color:
+                    AppTheme.lightTheme.colorScheme.onSurface.withOpacity(0.5),
                 size: 5.w,
               ),
             ],
@@ -340,8 +340,7 @@ These terms and conditions are governed by and construed in accordance with the 
             width: 10.w,
             height: 10.w,
             decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.tertiary
-                  .withValues(alpha: 0.1),
+              color: AppTheme.lightTheme.colorScheme.tertiary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(2.w),
             ),
             child: Center(
