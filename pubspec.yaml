@@ -31,6 +31,7 @@ dependencies:
   geolocator: ^13.0.4
   path_provider: ^2.1.2
   universal_html: ^2.2.4
+  sqflite: ^2.3.0
 
   pdf: any
 dev_dependencies:

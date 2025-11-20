@@ -4,18 +4,23 @@ import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
 import 'config.dart';
+import 'connectivity_service.dart';
+import 'offline_sync_service.dart';
 
 class MeterReadingService {
   final Dio _dio;
+  final ConnectivityService _connectivityService = ConnectivityService();
+  final OfflineSyncService _offlineSyncService = OfflineSyncService();
 
   MeterReadingService({Dio? dio})
       : _dio = dio ?? Dio(BaseOptions(baseUrl: Config.apiBaseUrl));
 
   /// Uploads a meter reading to the backend.
+  /// If offline, queues the reading for later sync.
   ///
   /// Required fields: userId, readingValue. Image is optional.
-  /// Returns the parsed response JSON map on success.
-  Future<Map<String, dynamic>> uploadReading({
+  /// Returns the parsed response JSON map on success, or null if queued for offline.
+  Future<Map<String, dynamic>?> uploadReading({
     required int userId,
     required double readingValue,
     DateTime? readingDate,
@@ -24,6 +29,22 @@ class MeterReadingService {
     String? notes,
   }) async {
     if (userId <= 0) throw ArgumentError('Invalid userId');
+
+    // Check if we're online
+    if (!_connectivityService.isOnline) {
+      // Queue for offline sync
+      await _offlineSyncService.queueReading(
+        userId: userId,
+        readingValue: readingValue,
+        readingDate: readingDate,
+        imagePath: imageFile?.path,
+        latitude: gpsLocation?['latitude'],
+        longitude: gpsLocation?['longitude'],
+        accuracy: gpsLocation?['accuracy'],
+        notes: notes,
+      );
+      return null; // Indicate that reading was queued
+    }
 
     final formMap = <String, dynamic>{
       'user_id': userId.toString(),
@@ -65,7 +86,26 @@ class MeterReadingService {
 
       throw Exception('Server responded with status ${resp.statusCode}');
     } on DioException catch (e) {
-      // Provide helpful error messages
+      // If network error, queue for offline sync
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+
+        await _offlineSyncService.queueReading(
+          userId: userId,
+          readingValue: readingValue,
+          readingDate: readingDate,
+          imagePath: imageFile?.path,
+          latitude: gpsLocation?['latitude'],
+          longitude: gpsLocation?['longitude'],
+          accuracy: gpsLocation?['accuracy'],
+          notes: notes,
+        );
+        return null; // Indicate that reading was queued
+      }
+
+      // Provide helpful error messages for other types of errors
       if (e.response != null) {
         throw Exception(
             'Upload failed: ${e.response?.statusCode} ${e.response?.data}');

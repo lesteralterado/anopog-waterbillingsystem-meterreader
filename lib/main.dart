@@ -3,10 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../core/app_export.dart';
+import '../core/offline_sync_service.dart';
 import '../widgets/custom_error_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize offline sync service
+  final offlineSyncService = OfflineSyncService();
+  await offlineSyncService.initialize();
 
   bool _hasShownError = false;
 

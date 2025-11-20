@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -332,8 +334,8 @@ class _CameraCaptureSectionState extends State<CameraCaptureSection> {
                   errorBuilder: (context, error, stackTrace) =>
                       _buildImageError(),
                 )
-              : Image.network(
-                  _capturedImage!.path,
+              : Image.file(
+                  File(_capturedImage!.path),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
                       _buildImageError(),

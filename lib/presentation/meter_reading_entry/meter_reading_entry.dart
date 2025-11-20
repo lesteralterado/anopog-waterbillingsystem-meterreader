@@ -14,6 +14,8 @@ import './widgets/homeowner_info_card.dart';
 import './widgets/notes_section.dart';
 import './widgets/reading_input_section.dart';
 import '../../core/meter_reading_service.dart';
+import '../../core/connectivity_service.dart';
+import '../../core/offline_sync_service.dart';
 
 class MeterReadingEntry extends StatefulWidget {
   const MeterReadingEntry({super.key});
@@ -26,6 +28,9 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
   final TextEditingController _readingController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  final ConnectivityService _connectivityService = ConnectivityService();
+  final OfflineSyncService _offlineSyncService = OfflineSyncService();
 
   // Mock homeowner data
   final Map<String, dynamic> _homeownerData = {
@@ -45,13 +50,46 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
   bool _isReadingValid = false;
   bool _isSaving = false;
   bool _hasUnsavedChanges = false;
+  bool _isOnline = true;
+  int _pendingReadingsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _readingController.addListener(_onReadingChanged);
     _notesController.addListener(_onNotesChanged);
+    _initializeServices();
     _autoSaveTimer();
+  }
+
+  Future<void> _initializeServices() async {
+    await _connectivityService.initialize();
+    await _offlineSyncService.initialize();
+
+    // Listen for connectivity changes
+    _connectivityService.connectivityStream.listen((isOnline) {
+      if (mounted) {
+        setState(() {
+          _isOnline = isOnline;
+        });
+        _updatePendingReadingsCount();
+      }
+    });
+
+    // Initial state
+    setState(() {
+      _isOnline = _connectivityService.isOnline;
+    });
+    _updatePendingReadingsCount();
+  }
+
+  Future<void> _updatePendingReadingsCount() async {
+    final count = await _offlineSyncService.getPendingReadingsCount();
+    if (mounted) {
+      setState(() {
+        _pendingReadingsCount = count;
+      });
+    }
   }
 
   @override
@@ -61,6 +99,7 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
     _readingController.dispose();
     _notesController.dispose();
     _scrollController.dispose();
+    _offlineSyncService.dispose();
     super.dispose();
   }
 
@@ -173,13 +212,28 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
         _hasUnsavedChanges = false;
       });
 
-      Fluttertoast.showToast(
-        msg: "Reading uploaded successfully!",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
+      // Update pending readings count
+      await _updatePendingReadingsCount();
+
+      if (result == null) {
+        // Reading was queued for offline sync
+        Fluttertoast.showToast(
+          msg: "Reading saved offline. Will sync when online.",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+        );
+      } else {
+        // Reading uploaded successfully
+        Fluttertoast.showToast(
+          msg: "Reading uploaded successfully!",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+      }
 
       // Navigate to billing receipt generation (server may return created id/details)
       Navigator.pushReplacementNamed(context, '/billing-receipt-generation');
@@ -446,6 +500,68 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
             ),
           ),
           actions: [
+            // Connectivity status
+            Container(
+              margin: EdgeInsets.only(right: 2.w),
+              padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.w),
+              decoration: BoxDecoration(
+                color: _isOnline
+                    ? AppTheme.lightTheme.colorScheme.primary.withValues(alpha: 0.1)
+                    : AppTheme.lightTheme.colorScheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomIconWidget(
+                    iconName: _isOnline ? 'wifi' : 'wifi_off',
+                    color: _isOnline
+                        ? AppTheme.lightTheme.colorScheme.primary
+                        : AppTheme.lightTheme.colorScheme.error,
+                    size: 16,
+                  ),
+                  SizedBox(width: 1.w),
+                  Text(
+                    _isOnline ? 'Online' : 'Offline',
+                    style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
+                      color: _isOnline
+                          ? AppTheme.lightTheme.colorScheme.primary
+                          : AppTheme.lightTheme.colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Pending readings count
+            if (_pendingReadingsCount > 0)
+              Container(
+                margin: EdgeInsets.only(right: 2.w),
+                padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.w),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightTheme.colorScheme.secondary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomIconWidget(
+                      iconName: 'schedule',
+                      color: AppTheme.lightTheme.colorScheme.onSecondary,
+                      size: 16,
+                    ),
+                    SizedBox(width: 1.w),
+                    Text(
+                      '$_pendingReadingsCount',
+                      style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.lightTheme.colorScheme.onSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Unsaved changes indicator
             if (_hasUnsavedChanges)
               Container(
                 margin: EdgeInsets.only(right: 4.w),
