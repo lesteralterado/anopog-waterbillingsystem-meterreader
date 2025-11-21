@@ -9,9 +9,15 @@ import '../widgets/custom_error_widget.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize offline sync service
-  final offlineSyncService = OfflineSyncService();
-  await offlineSyncService.initialize();
+  try {
+    // Initialize offline sync service
+    final offlineSyncService = OfflineSyncService();
+    await offlineSyncService.initialize();
+  } catch (e, stackTrace) {
+    // Log error and continue without crashing
+    debugPrint('Error initializing offline sync: $e');
+    debugPrint(stackTrace.toString());
+  }
 
   bool _hasShownError = false;
 

@@ -44,9 +44,15 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <true />
-    </dict>
+	   <dict>
+	       <key>NSAllowsArbitraryLoads</key>
+	       <true />
+	   </dict>
+	   <key>NSCameraUsageDescription</key>
+	   <string>This app needs camera access to capture meter readings</string>
+	   <key>NSLocationWhenInUseUsageDescription</key>
+	   <string>This app needs location access to record GPS coordinates for meter readings</string>
+	   <key>NSPhotoLibraryUsageDescription</key>
+	   <string>This app needs photo library access to select images for meter readings</string>
 </dict>
 </plist>
