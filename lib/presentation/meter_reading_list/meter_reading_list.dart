@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
+import '../../core/user_service.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/batch_operations_toolbar_widget.dart';
 import './widgets/bulk_actions_fab_widget.dart';
@@ -20,6 +21,7 @@ class MeterReadingList extends StatefulWidget {
 class _MeterReadingListState extends State<MeterReadingList> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final UserService _userService = UserService();
 
   List<Map<String, dynamic>> _allHomeowners = [];
   List<Map<String, dynamic>> _filteredHomeowners = [];
@@ -30,11 +32,39 @@ class _MeterReadingListState extends State<MeterReadingList> {
   bool _isLoading = false;
   bool _isOfflineMode = false;
   int _syncPendingCount = 3;
+  String? _selectedPurok;
 
   @override
   void initState() {
     super.initState();
-    _loadHomeownerData();
+    debugPrint('MeterReadingList initState called');
+
+    // Get purok and consumers from route arguments
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      debugPrint('MeterReadingList received args: $args');
+
+      if (args != null) {
+        _selectedPurok = args['purok']?['name'] as String?;
+        final consumers = args['consumers'] as List<Map<String, dynamic>>?;
+        debugPrint('Selected purok: $_selectedPurok');
+        debugPrint('Consumers received: ${consumers?.length ?? 0} items');
+
+        if (consumers != null && consumers.isNotEmpty) {
+          debugPrint('Loading data from args...');
+          setState(() => _isLoading = true); // Show loading while processing
+          _loadHomeownerDataFromArgs(consumers);
+        } else {
+          debugPrint('No consumers provided, loading default data');
+          _loadHomeownerData();
+        }
+      } else {
+        debugPrint('No args provided, loading default data');
+        _loadHomeownerData();
+      }
+    });
+
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -45,128 +75,118 @@ class _MeterReadingListState extends State<MeterReadingList> {
     super.dispose();
   }
 
-  void _loadHomeownerData() {
+  Future<void> _loadHomeownerData() async {
     setState(() => _isLoading = true);
 
-    // Mock homeowner data
-    _allHomeowners = [
-      {
-        "id": 1,
-        "houseNumber": "101",
-        "name": "Maria Santos",
-        "address": "101 Main Street, Purok 1",
-        "previousReading": 245.5,
-        "dueDate": "12/15/2024",
-        "status": "pending",
-        "meterNumber": "WM-001-101",
-        "phoneNumber": "+63 912 345 6789",
-        "paymentStatus": "unpaid",
-        "street": "Main Street",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 30)),
-      },
-      {
-        "id": 2,
-        "houseNumber": "102",
-        "name": "Juan Dela Cruz",
-        "address": "102 Oak Avenue, Purok 1",
-        "previousReading": 189.2,
-        "dueDate": "12/16/2024",
-        "status": "completed",
-        "meterNumber": "WM-001-102",
-        "phoneNumber": "+63 917 234 5678",
-        "paymentStatus": "paid",
-        "street": "Oak Avenue",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 25)),
-      },
-      {
-        "id": 3,
-        "houseNumber": "103",
-        "name": "Ana Rodriguez",
-        "address": "103 Pine Road, Purok 1",
-        "previousReading": 312.8,
-        "dueDate": "12/10/2024",
-        "status": "overdue",
-        "meterNumber": "WM-001-103",
-        "phoneNumber": "+63 905 876 5432",
-        "paymentStatus": "overdue",
-        "street": "Pine Road",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 45)),
-      },
-      {
-        "id": 4,
-        "houseNumber": "104",
-        "name": "Roberto Garcia",
-        "address": "104 Maple Drive, Purok 1",
-        "previousReading": 156.7,
-        "dueDate": "12/18/2024",
-        "status": "issue",
-        "meterNumber": "WM-001-104",
-        "phoneNumber": "+63 920 345 6789",
-        "paymentStatus": "unpaid",
-        "street": "Maple Drive",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 20)),
-      },
-      {
-        "id": 5,
-        "houseNumber": "105",
-        "name": "Carmen Villanueva",
-        "address": "105 Cedar Lane, Purok 1",
-        "previousReading": 278.4,
-        "dueDate": "12/20/2024",
-        "status": "pending",
-        "meterNumber": "WM-001-105",
-        "phoneNumber": "+63 918 765 4321",
-        "paymentStatus": "unpaid",
-        "street": "Cedar Lane",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 35)),
-      },
-      {
-        "id": 6,
-        "houseNumber": "106",
-        "name": "Pedro Martinez",
-        "address": "106 Main Street, Purok 1",
-        "previousReading": 198.9,
-        "dueDate": "12/22/2024",
-        "status": "completed",
-        "meterNumber": "WM-001-106",
-        "phoneNumber": "+63 915 432 1098",
-        "paymentStatus": "paid",
-        "street": "Main Street",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 15)),
-      },
-      {
-        "id": 7,
-        "houseNumber": "107",
-        "name": "Lisa Fernandez",
-        "address": "107 Oak Avenue, Purok 1",
-        "previousReading": 234.1,
-        "dueDate": "12/14/2024",
-        "status": "pending",
-        "meterNumber": "WM-001-107",
-        "phoneNumber": "+63 922 567 8901",
-        "paymentStatus": "unpaid",
-        "street": "Oak Avenue",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 28)),
-      },
-      {
-        "id": 8,
-        "houseNumber": "108",
-        "name": "Miguel Torres",
-        "address": "108 Pine Road, Purok 1",
-        "previousReading": 167.3,
-        "dueDate": "12/25/2024",
-        "status": "pending",
-        "meterNumber": "WM-001-108",
-        "phoneNumber": "+63 913 678 9012",
-        "paymentStatus": "unpaid",
-        "street": "Pine Road",
-        "lastReadingDate": DateTime.now().subtract(const Duration(days: 40)),
-      },
-    ];
+    try {
+      final consumers = await _userService.fetchConsumers();
 
-    _filteredHomeowners = List.from(_allHomeowners);
+      // Filter by purok if one is selected
+      List<Map<String, dynamic>> filteredConsumers = consumers;
+      if (_selectedPurok != null) {
+        filteredConsumers = consumers.where((consumer) {
+          final consumerPurok = consumer['purok'] as String?;
+          return consumerPurok == _selectedPurok;
+        }).toList();
+      }
+
+      // Convert consumer data to homeowner format expected by the UI
+      _allHomeowners = filteredConsumers.map((consumer) {
+        final purok = consumer['purok'] as String? ?? 'Unknown';
+        final meterNumber = consumer['meter_number'] as String? ?? 'N/A';
+        final fullName = consumer['full_name'] as String? ?? 'Unknown';
+        final address = consumer['address'] as String? ?? 'No address';
+        final phone = consumer['phone'] as String? ?? 'No phone';
+
+        return {
+          "id": consumer['id'] as int? ?? 0,
+          "houseNumber": meterNumber, // Use meter number as house number
+          "name": fullName,
+          "address": "$address, $purok",
+          "previousReading": 0.0, // Default values for meter reading fields
+          "dueDate": "N/A",
+          "status": "pending",
+          "meterNumber": meterNumber,
+          "phoneNumber": phone,
+          "paymentStatus": "unpaid",
+          "street": purok, // Use purok as street
+          "lastReadingDate": DateTime.now().subtract(const Duration(days: 30)),
+        };
+      }).toList();
+
+      _filteredHomeowners = List.from(_allHomeowners);
+    } catch (e) {
+      debugPrint('Error loading consumers: $e');
+      // Fallback to empty list
+      _allHomeowners = [];
+      _filteredHomeowners = [];
+    }
 
     setState(() => _isLoading = false);
+  }
+
+  void _loadHomeownerDataFromArgs(List<Map<String, dynamic>> consumers) {
+    debugPrint('Converting ${consumers.length} consumers to homeowners format');
+    debugPrint(
+        'First consumer sample: ${consumers.isNotEmpty ? consumers.first : 'No consumers'}');
+
+    // Convert consumer data to homeowner format expected by the UI
+    _allHomeowners = consumers.map((consumer) {
+      final purok = consumer['purok'] as String? ?? 'Unknown';
+      final meterNumber = consumer['meter_number'] as String? ?? 'N/A';
+      final username = consumer['username'] as String? ?? 'Unknown';
+      final fullName = consumer['full_name'] as String?;
+      final address = consumer['address'] as String? ?? 'No address';
+      final phone = consumer['phone'] as String? ?? 'No phone';
+
+      // Use username as fallback if full_name is null
+      final displayName = fullName ?? username;
+
+      // Convert string ID to int, handling both string and int inputs
+      final consumerId = consumer['id'];
+      final int homeownerId = consumerId is String
+          ? int.tryParse(consumerId) ?? 0
+          : (consumerId as int?) ?? 0;
+
+      final homeowner = {
+        "id": homeownerId,
+        "name": displayName,
+        "address": "$address, Purok $purok",
+        "accountNumber":
+            meterNumber, // Map meter number to account number for meter reading screen
+        "previousReading": 0.0, // Default values for meter reading fields
+        "lastReadingDate": DateTime.now().subtract(const Duration(days: 30)),
+        "meterType": "Digital Water Meter",
+        "connectionStatus": "Active",
+        // Additional fields for consumer list display
+        "houseNumber": meterNumber,
+        "dueDate": "N/A",
+        "status": "pending",
+        "meterNumber": meterNumber,
+        "phoneNumber": phone,
+        "paymentStatus": "unpaid",
+        "street": "Purok $purok",
+      };
+
+      return homeowner;
+    }).toList();
+
+    _filteredHomeowners = List.from(_allHomeowners);
+    debugPrint('Converted to ${_allHomeowners.length} homeowners');
+    debugPrint(
+        'First homeowner sample: ${_allHomeowners.isNotEmpty ? _allHomeowners.first : 'No homeowners'}');
+
+    // Update loading state and force UI update
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
+    // Temporarily disable filtering to debug
+    _activeFilters.clear();
+    _activeFilterLabels.clear();
+    _searchController.clear();
   }
 
   void _onSearchChanged() {
@@ -472,7 +492,11 @@ class _MeterReadingListState extends State<MeterReadingList> {
   }
 
   void _openMeterReadingEntry(Map<String, dynamic> homeowner) {
-    Navigator.pushNamed(context, '/meter-reading-entry');
+    debugPrint('Opening meter reading entry for homeowner: $homeowner');
+    debugPrint('Homeowner ID: ${homeowner['id']}');
+    debugPrint('Homeowner name: ${homeowner['name']}');
+
+    Navigator.pushNamed(context, '/meter-reading-entry', arguments: homeowner);
   }
 
   @override
@@ -487,7 +511,9 @@ class _MeterReadingListState extends State<MeterReadingList> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Meter Reading List',
+              _selectedPurok != null
+                  ? '$_selectedPurok Consumers (${_allHomeowners.length})'
+                  : 'Meter Reading List',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onPrimary,
@@ -632,7 +658,9 @@ class _MeterReadingListState extends State<MeterReadingList> {
               _searchController.text.isNotEmpty ||
                       _activeFilterLabels.isNotEmpty
                   ? 'Try adjusting your search or filters'
-                  : 'No homeowner records available for this purok',
+                  : _selectedPurok != null
+                      ? 'No consumers found in $_selectedPurok'
+                      : 'No consumer records available',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface.withValues(alpha: 0.5),
               ),

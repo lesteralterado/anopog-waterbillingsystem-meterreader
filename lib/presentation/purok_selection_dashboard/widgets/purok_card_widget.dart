@@ -22,10 +22,7 @@ class PurokCardWidget extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final String status = purokData['status'] as String;
-    final double completionPercentage =
-        (purokData['completionPercentage'] as num).toDouble();
-    final int totalMeters = purokData['totalMeters'] as int;
-    final int completedMeters = purokData['completedMeters'] as int;
+    final int consumerCount = purokData['consumerCount'] as int? ?? 0;
 
     Color statusColor = _getStatusColor(status, colorScheme);
     Color cardColor = colorScheme.surface;
@@ -84,44 +81,41 @@ class PurokCardWidget extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 1.h),
-              Text(
-                '$totalMeters meters total',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-              SizedBox(height: 1.h),
               Row(
                 children: [
-                  Expanded(
-                    child: LinearProgressIndicator(
-                      value: completionPercentage / 100,
-                      backgroundColor:
-                          colorScheme.outline.withValues(alpha: 0.2),
-                      valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                      minHeight: 6,
-                    ),
+                  CustomIconWidget(
+                    iconName: 'people',
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    size: 16,
                   ),
-                  SizedBox(width: 2.w),
+                  SizedBox(width: 1.w),
                   Text(
-                    '${completionPercentage.toInt()}%',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
+                    '$consumerCount consumer${consumerCount != 1 ? 's' : ''}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 1.h),
-              Text(
-                '$completedMeters of $totalMeters completed',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Active',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
                 ),
               ),
               SizedBox(height: 0.5.h),
               Text(
-                'Last read: ${purokData['lastReadingDate'] as String}',
+                'Last updated: ${purokData['lastUpdated'] as String? ?? 'N/A'}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.5),
                   fontSize: 10.sp,

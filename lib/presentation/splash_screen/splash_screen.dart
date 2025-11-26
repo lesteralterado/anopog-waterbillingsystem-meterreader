@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../../core/app_export.dart';
+import 'package:barangay_meter_reader/core/app_export.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
       });
 
       // Navigate after minimum splash duration
-      await Future.delayed(const Duration(milliseconds: 2500));
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       if (mounted) {
         _navigateToNextScreen();
@@ -92,21 +92,20 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _performInitializationTasks() async {
-    // Simulate checking authentication status
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      // Quick initialization check - no artificial delays
+      await Future.delayed(const Duration(milliseconds: 200));
 
-    // Simulate loading user preferences
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // Simulate verifying offline data integrity
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    // Simulate preparing cached meter reading records
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      _isInitialized = true;
-    });
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('Error in splash initialization: $e');
+      // Still mark as initialized to allow app to continue
+      setState(() {
+        _isInitialized = true;
+      });
+    }
   }
 
   void _navigateToNextScreen() {
@@ -183,8 +182,8 @@ class _SplashScreenState extends State<SplashScreen>
                             children: [
                               // Government/Utility Logo
                               Container(
-                                width: 25.w,
-                                height: 25.w,
+                                width: 20.w,
+                                height: 20.w,
                                 decoration: BoxDecoration(
                                   color:
                                       AppTheme.lightTheme.colorScheme.surface,
@@ -206,7 +205,7 @@ class _SplashScreenState extends State<SplashScreen>
                                         iconName: 'water_drop',
                                         color: AppTheme
                                             .lightTheme.colorScheme.primary,
-                                        size: 8.w,
+                                        size: 6.w,
                                       ),
                                       SizedBox(height: 1.h),
                                       Text(

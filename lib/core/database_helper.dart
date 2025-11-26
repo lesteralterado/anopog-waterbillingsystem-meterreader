@@ -6,10 +6,11 @@ import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
   static const _databaseName = 'meter_reader.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   // Table names
   static const tablePendingReadings = 'pending_readings';
+  static const tableConsumers = 'consumers';
 
   // Column names
   static const columnId = 'id';
@@ -23,6 +24,18 @@ class DatabaseHelper {
   static const columnNotes = 'notes';
   static const columnCreatedAt = 'created_at';
   static const columnStatus = 'status'; // 'pending', 'uploading', 'failed'
+
+  // Consumer columns
+  static const columnConsumerId = 'consumer_id';
+  static const columnUsername = 'username';
+  static const columnRoleId = 'role_id';
+  static const columnPurok = 'purok';
+  static const columnMeterNumber = 'meter_number';
+  static const columnFullName = 'full_name';
+  static const columnAddress = 'address';
+  static const columnPhone = 'phone';
+  static const columnEmail = 'email';
+  static const columnRoleName = 'role_name';
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -62,10 +75,44 @@ class DatabaseHelper {
         $columnStatus TEXT NOT NULL DEFAULT 'pending'
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE $tableConsumers (
+        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnConsumerId INTEGER UNIQUE NOT NULL,
+        $columnUsername TEXT,
+        $columnRoleId INTEGER,
+        $columnPurok TEXT,
+        $columnMeterNumber TEXT,
+        $columnFullName TEXT,
+        $columnAddress TEXT,
+        $columnPhone TEXT,
+        $columnEmail TEXT,
+        $columnRoleName TEXT,
+        $columnCreatedAt TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Handle database upgrades here if needed
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE $tableConsumers (
+          $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $columnConsumerId INTEGER UNIQUE NOT NULL,
+          $columnUsername TEXT,
+          $columnRoleId INTEGER,
+          $columnPurok TEXT,
+          $columnMeterNumber TEXT,
+          $columnFullName TEXT,
+          $columnAddress TEXT,
+          $columnPhone TEXT,
+          $columnEmail TEXT,
+          $columnRoleName TEXT,
+          $columnCreatedAt TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future<int> insertPendingReading(Map<String, dynamic> reading) async {
@@ -127,5 +174,27 @@ class DatabaseHelper {
       where: '$columnCreatedAt < ? AND $columnStatus != ?',
       whereArgs: [cutoffDate, 'pending'],
     );
+  }
+
+  // Consumer methods
+  Future<int> insertConsumer(Map<String, dynamic> consumer) async {
+    Database db = await database;
+    return await db.insert(tableConsumers, consumer, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getConsumers() async {
+    Database db = await database;
+    return await db.query(tableConsumers, orderBy: '$columnFullName ASC');
+  }
+
+  Future<int> deleteAllConsumers() async {
+    Database db = await database;
+    return await db.delete(tableConsumers);
+  }
+
+  Future<int> getConsumersCount() async {
+    Database db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM $tableConsumers');
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 }

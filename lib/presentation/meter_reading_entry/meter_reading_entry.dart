@@ -32,17 +32,19 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
   final ConnectivityService _connectivityService = ConnectivityService();
   final OfflineSyncService _offlineSyncService = OfflineSyncService();
 
-  // Mock homeowner data
-  final Map<String, dynamic> _homeownerData = {
+  // Homeowner data - can be passed from route arguments or use mock data
+  Map<String, dynamic> _homeownerData = {
     "id": 1,
-    "name": "Maria Santos",
-    "address": "123 Sampaguita Street, Purok 1, Barangay San Jose",
-    "accountNumber": "WM-2024-001234",
-    "previousReading": 145.5,
-    "lastReadingDate": "12/05/2024",
+    "name": "Loading...",
+    "address": "Loading...",
+    "accountNumber": "Loading...",
+    "previousReading": 0.0,
+    "lastReadingDate": "Loading...",
     "meterType": "Digital Water Meter",
     "connectionStatus": "Active",
   };
+
+  bool _dataLoaded = false;
 
   double _currentReading = 0.0;
   XFile? _capturedImage;
@@ -56,6 +58,46 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
   @override
   void initState() {
     super.initState();
+    debugPrint('MeterReadingEntry initState called');
+
+    // Initialize homeowner data from route arguments or use mock data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = ModalRoute.of(context);
+      debugPrint('ModalRoute: $route');
+      debugPrint('Route settings: ${route?.settings}');
+      debugPrint('Route arguments: ${route?.settings.arguments}');
+
+      final args = route?.settings.arguments as Map<String, dynamic>?;
+      debugPrint('MeterReadingEntry received args: $args');
+
+      if (args != null && args.isNotEmpty) {
+        // Use passed homeowner data
+        _homeownerData = Map<String, dynamic>.from(args);
+        debugPrint('Using passed homeowner data: $_homeownerData');
+        debugPrint('Homeowner name: ${_homeownerData['name']}');
+        debugPrint('Homeowner address: ${_homeownerData['address']}');
+      } else {
+        // Fallback to mock data
+        _homeownerData = {
+          "id": 1,
+          "name": "Maria Santos",
+          "address": "123 Sampaguita Street, Purok 1, Barangay San Jose",
+          "accountNumber": "WM-2024-001234",
+          "previousReading": 145.5,
+          "lastReadingDate": "12/05/2024",
+          "meterType": "Digital Water Meter",
+          "connectionStatus": "Active",
+        };
+        debugPrint('Using mock homeowner data (no args provided)');
+      }
+
+      // Mark data as loaded and trigger UI update
+      _dataLoaded = true;
+      if (mounted) {
+        setState(() {});
+      }
+    });
+
     _readingController.addListener(_onReadingChanged);
     _notesController.addListener(_onNotesChanged);
     _initializeServices();
@@ -195,28 +237,24 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
             }
           : null;
 
-      // Call service
-      final service = MeterReadingService();
-      final result = await service.uploadReading(
-        userId: userId,
-        readingValue: _currentReading,
-        readingDate: DateTime.now(),
-        imageFile: imageFile,
-        gpsLocation: gps,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
+      // If offline, queue the reading and return early
+      if (!_isOnline || !_connectivityService.isOnline) {
+        await _offlineSyncService.queueReading(
+          userId: userId,
+          readingValue: _currentReading,
+          readingDate: DateTime.now(),
+          imagePath: imageFile?.path,
+          latitude: gps?['latitude'],
+          longitude: gps?['longitude'],
+          accuracy: gps?['accuracy'],
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
 
-      debugPrint('Upload result: $result');
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+        await _updatePendingReadingsCount();
 
-      setState(() {
-        _hasUnsavedChanges = false;
-      });
-
-      // Update pending readings count
-      await _updatePendingReadingsCount();
-
-      if (result == null) {
-        // Reading was queued for offline sync
         Fluttertoast.showToast(
           msg: "Reading saved offline. Will sync when online.",
           toastLength: Toast.LENGTH_LONG,
@@ -224,13 +262,63 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
           backgroundColor: Colors.orange,
           textColor: Colors.white,
         );
-      } else {
+        return;
+      }
+
+      // Call service to upload
+      final service = MeterReadingService();
+      try {
+        final result = await service.uploadReading(
+          userId: userId,
+          readingValue: _currentReading,
+          readingDate: DateTime.now(),
+          imageFile: imageFile,
+          gpsLocation: gps,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
+
+        debugPrint('Upload result: $result');
+
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+
+        // Update pending readings count
+        await _updatePendingReadingsCount();
+
         // Reading uploaded successfully
         Fluttertoast.showToast(
           msg: "Reading uploaded successfully!",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+      } catch (e) {
+        // On network error, queue the reading for later sync
+        debugPrint('Upload failed, queuing offline: $e');
+        await _offlineSyncService.queueReading(
+          userId: userId,
+          readingValue: _currentReading,
+          readingDate: DateTime.now(),
+          imagePath: imageFile?.path,
+          latitude: gps?['latitude'],
+          longitude: gps?['longitude'],
+          accuracy: gps?['accuracy'],
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
+
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+
+        await _updatePendingReadingsCount();
+
+        Fluttertoast.showToast(
+          msg: "Reading saved offline due to network error.",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.orange,
           textColor: Colors.white,
         );
       }
@@ -474,6 +562,7 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
@@ -506,8 +595,10 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
               padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.w),
               decoration: BoxDecoration(
                 color: _isOnline
-                    ? AppTheme.lightTheme.colorScheme.primary.withValues(alpha: 0.1)
-                    : AppTheme.lightTheme.colorScheme.error.withValues(alpha: 0.1),
+                    ? AppTheme.lightTheme.colorScheme.primary
+                        .withValues(alpha: 0.1)
+                    : AppTheme.lightTheme.colorScheme.error
+                        .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -592,54 +683,63 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
           ],
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    SizedBox(height: 1.h),
-                    HomeownerInfoCard(homeownerData: _homeownerData),
-                    ReadingInputSection(
-                      controller: _readingController,
-                      previousReading:
-                          _homeownerData['previousReading'] as double,
-                      onReadingChanged: (reading) {
-                        setState(() {
-                          _currentReading = reading;
-                        });
-                      },
+        body: _dataLoaded
+            ? Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom + 16.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: 1.h),
+                          HomeownerInfoCard(homeownerData: _homeownerData),
+                          ReadingInputSection(
+                            controller: _readingController,
+                            previousReading:
+                                _homeownerData['previousReading'] as double,
+                            onReadingChanged: (reading) {
+                              setState(() {
+                                _currentReading = reading;
+                              });
+                            },
+                          ),
+                          CameraCaptureSection(
+                            onImageCaptured: _onImageCaptured,
+                          ),
+                          GpsLocationSection(
+                            onLocationCaptured: _onLocationCaptured,
+                          ),
+                          NotesSection(
+                            controller: _notesController,
+                            onNoteChanged: (note) {
+                              setState(() {
+                                _hasUnsavedChanges = true;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 2.h),
+                        ],
+                      ),
                     ),
-                    CameraCaptureSection(
-                      onImageCaptured: _onImageCaptured,
-                    ),
-                    GpsLocationSection(
-                      onLocationCaptured: _onLocationCaptured,
-                    ),
-                    NotesSection(
-                      controller: _notesController,
-                      onNoteChanged: (note) {
-                        setState(() {
-                          _hasUnsavedChanges = true;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 10.h), // Space for bottom action bar
-                  ],
+                  ),
+                  ActionButtonsSection(
+                    onSaveReading: _saveReading,
+                    onSaveAsEstimated: _saveAsEstimated,
+                    onReportIssue: _reportIssue,
+                    isReadingValid: _isReadingValid,
+                    isSaving: _isSaving,
+                  ),
+                ],
+              )
+            : Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.lightTheme.colorScheme.primary,
                 ),
               ),
-            ),
-            ActionButtonsSection(
-              onSaveReading: _saveReading,
-              onSaveAsEstimated: _saveAsEstimated,
-              onReportIssue: _reportIssue,
-              isReadingValid: _isReadingValid,
-              isSaving: _isSaving,
-            ),
-          ],
-        ),
       ),
     );
   }

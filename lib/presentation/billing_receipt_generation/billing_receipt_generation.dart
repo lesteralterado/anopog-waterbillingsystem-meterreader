@@ -11,6 +11,7 @@ import 'package:sizer/sizer.dart';
 import 'package:universal_html/html.dart' as html;
 
 import '../../core/app_export.dart';
+import '../../core/user_service.dart';
 import './widgets/communication_options_widget.dart';
 import './widgets/editable_fields_widget.dart';
 import './widgets/receipt_preview_widget.dart';
@@ -26,36 +27,62 @@ class BillingReceiptGeneration extends StatefulWidget {
 class _BillingReceiptGenerationState extends State<BillingReceiptGeneration> {
   bool _isEditing = false;
   bool _isProcessing = false;
+  bool _isLoading = true;
   Map<String, String> _validationErrors = {};
-
-  final Map<String, dynamic> _receiptData = {
-    "receiptNumber": "WU-2025-001234",
-    "issueDate": "01/05/2025",
-    "barangayName": "San Miguel",
-    "homeownerName": "Maria Santos Rodriguez",
-    "address": "123 Sampaguita Street, Purok 3",
-    "meterNumber": "WM-789456",
-    "purok": "Purok 3",
-    "billingPeriod": "December 2024",
-    "previousReading": 145.5,
-    "currentReading": 158.2,
-    "consumption": 12.7,
-    "ratePerCubicMeter": 25.50,
-    "basicCharge": 150.00,
-    "penalties": 0.00,
-    "totalAmount": "473.85",
-    "dueDate": "01/20/2025",
-    "paymentTerms":
-        "Payment is due within 15 days from issue date. Late payments will incur a 10% penalty fee.",
-    "qrCode": "QR-WU-2025-001234-VERIFY",
-    "homeownerPhone": "+639123456789",
-    "homeownerEmail": "maria.santos@email.com",
-  };
+  late Map<String, dynamic> _receiptData;
+  final UserService _userService = UserService();
 
   @override
   void initState() {
     super.initState();
-    _calculateTotalAmount();
+    _fetchBillingData();
+  }
+
+  Future<void> _fetchBillingData() async {
+    try {
+      _receiptData = await _userService.fetchBillingData();
+      _calculateTotalAmount();
+    } catch (e) {
+      // Handle error, perhaps show snackbar or set default data
+      _receiptData = {
+        "receiptNumber": "WU-2025-001234",
+        "issueDate": "01/05/2025",
+        "barangayName": "Anopog",
+        "homeownerName": "Maria Santos Rodriguez",
+        "address": "123 Sampaguita Street, Purok 3",
+        "meterNumber": "WM-789456",
+        "purok": "Purok 3",
+        "billingPeriod": "December 2024",
+        "previousReading": 145.5,
+        "currentReading": 158.2,
+        "consumption": 12.7,
+        "ratePerCubicMeter": 25.50,
+        "basicCharge": 150.00,
+        "penalties": 0.00,
+        "totalAmount": "473.85",
+        "dueDate": "01/20/2025",
+        "paymentTerms":
+            "Payment is due within 15 days from issue date. Late payments will incur a 10% penalty fee.",
+        "qrCode": "QR-WU-2025-001234-VERIFY",
+        "homeownerPhone": "+639123456789",
+        "homeownerEmail": "maria.santos@email.com",
+      };
+      _calculateTotalAmount();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load billing data: ${e.toString()}'),
+            backgroundColor: AppTheme.lightTheme.colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _calculateTotalAmount() {
@@ -546,6 +573,29 @@ Barangay ${_receiptData["barangayName"]} Water Utility Office
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppTheme.lightTheme.colorScheme.surfaceContainerLowest,
+        appBar: AppBar(
+          title: Text(
+            'Billing Receipt Generation',
+            style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+              color: AppTheme.lightTheme.colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: AppTheme.lightTheme.colorScheme.primary,
+          foregroundColor: AppTheme.lightTheme.colorScheme.onPrimary,
+          elevation: 2,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.lightTheme.colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.lightTheme.colorScheme.surfaceContainerLowest,
       appBar: AppBar(

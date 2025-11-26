@@ -32,7 +32,6 @@ class _CameraCaptureSectionState extends State<CameraCaptureSection> {
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
   }
 
   @override
@@ -281,7 +280,16 @@ class _CameraCaptureSectionState extends State<CameraCaptureSection> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          CameraPreview(_cameraController!),
+          SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _cameraController!.value.previewSize?.width ?? 1,
+                height: _cameraController!.value.previewSize?.height ?? 1,
+                child: CameraPreview(_cameraController!),
+              ),
+            ),
+          ),
           Container(
             decoration: BoxDecoration(
               border: Border.all(

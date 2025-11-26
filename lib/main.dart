@@ -2,22 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
-import '../core/app_export.dart';
-import '../core/offline_sync_service.dart';
-import '../widgets/custom_error_widget.dart';
+import 'core/app_export.dart';
+import 'core/offline_sync_service.dart';
+import 'widgets/custom_error_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Initialize offline sync service
-    final offlineSyncService = OfflineSyncService();
-    await offlineSyncService.initialize();
-  } catch (e, stackTrace) {
-    // Log error and continue without crashing
-    debugPrint('Error initializing offline sync: $e');
-    debugPrint(stackTrace.toString());
+  // Initialize offline sync service in background (non-blocking)
+  Future<void> initializeOfflineSync() async {
+    try {
+      final offlineSyncService = OfflineSyncService();
+      await offlineSyncService.initialize();
+      debugPrint('Offline sync initialized successfully');
+    } catch (e, stackTrace) {
+      debugPrint('Error initializing offline sync: $e');
+      debugPrint(stackTrace.toString());
+    }
   }
+
+  // Start initialization but don't wait for it
+  initializeOfflineSync();
 
   bool _hasShownError = false;
 

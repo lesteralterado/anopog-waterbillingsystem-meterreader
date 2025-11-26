@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
+import '../../core/user_service.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/dashboard_header_widget.dart';
 import './widgets/progress_banner_widget.dart';
@@ -22,101 +23,69 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
   late TabController _tabController;
   bool _isSynced = true;
   bool _isRefreshing = false;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _purokData = [];
+  List<Map<String, dynamic>> _allConsumers = [];
+  List<Map<String, dynamic>> _purokGroups = []; // Store grouped data
 
-  // Mock data for puroks
-  final List<Map<String, dynamic>> _purokData = [
-    {
-      "id": 1,
-      "name": "Purok 1 - Maligaya",
-      "totalMeters": 45,
-      "completedMeters": 45,
-      "completionPercentage": 100,
-      "status": "completed",
-      "lastReadingDate": "Dec 04, 2025",
-      "estimatedTime": 35,
-    },
-    {
-      "id": 2,
-      "name": "Purok 2 - Masaya",
-      "totalMeters": 38,
-      "completedMeters": 28,
-      "completionPercentage": 74,
-      "status": "in_progress",
-      "lastReadingDate": "Dec 03, 2025",
-      "estimatedTime": 25,
-    },
-    {
-      "id": 3,
-      "name": "Purok 3 - Maunlad",
-      "totalMeters": 52,
-      "completedMeters": 15,
-      "completionPercentage": 29,
-      "status": "overdue",
-      "lastReadingDate": "Nov 28, 2025",
-      "estimatedTime": 45,
-    },
-    {
-      "id": 4,
-      "name": "Purok 4 - Mapayapa",
-      "totalMeters": 41,
-      "completedMeters": 0,
-      "completionPercentage": 0,
-      "status": "not_started",
-      "lastReadingDate": "Nov 25, 2025",
-      "estimatedTime": 30,
-    },
-    {
-      "id": 5,
-      "name": "Purok 5 - Maginhawa",
-      "totalMeters": 47,
-      "completedMeters": 35,
-      "completionPercentage": 74,
-      "status": "in_progress",
-      "lastReadingDate": "Dec 04, 2025",
-      "estimatedTime": 20,
-    },
-    {
-      "id": 6,
-      "name": "Purok 6 - Malinis",
-      "totalMeters": 33,
-      "completedMeters": 33,
-      "completionPercentage": 100,
-      "status": "completed",
-      "lastReadingDate": "Dec 04, 2025",
-      "estimatedTime": 25,
-    },
-    {
-      "id": 7,
-      "name": "Purok 7 - Matahimik",
-      "totalMeters": 39,
-      "completedMeters": 12,
-      "completionPercentage": 31,
-      "status": "in_progress",
-      "lastReadingDate": "Dec 02, 2025",
-      "estimatedTime": 35,
-    },
-    {
-      "id": 8,
-      "name": "Purok 8 - Masigla",
-      "totalMeters": 44,
-      "completedMeters": 0,
-      "completionPercentage": 0,
-      "status": "not_started",
-      "lastReadingDate": "Nov 30, 2025",
-      "estimatedTime": 40,
-    },
-  ];
+  final UserService _userService = UserService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadConsumers();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadConsumers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final purokGroups = await _userService.fetchConsumersByPurok();
+      _purokGroups = purokGroups; // Store the grouped data
+
+      // Flatten all consumers for total count
+      _allConsumers = purokGroups.expand((purokGroup) =>
+        (purokGroup['consumers'] as List).map((consumer) => Map<String, dynamic>.from(consumer))
+      ).toList();
+
+      // Create purok data from API response
+      _purokData = purokGroups.map((purokGroup) {
+        final purokName = purokGroup['purok'] as String;
+        final consumers = purokGroup['consumers'] as List;
+        final consumerCount = consumers.length;
+
+        // Generate a unique ID based on purok name
+        final purokId = purokName.hashCode.abs();
+
+        return {
+          "id": purokId,
+          "name": "Purok $purokName",
+          "consumerCount": consumerCount,
+          "status": "active",
+          "lastUpdated": DateTime.now().toString().split('.').first,
+        };
+      }).toList();
+
+      // Sort puroks by name
+      _purokData.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+
+    } catch (e) {
+      debugPrint('Error loading consumers by purok: $e');
+      // Fallback to empty data
+      _purokData = [];
+      _allConsumers = [];
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -184,10 +153,8 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final int totalTarget = _purokData.fold<int>(
-        0, (sum, purok) => sum + (purok['totalMeters'] as int));
-    final int totalCompleted = _purokData.fold<int>(
-        0, (sum, purok) => sum + (purok['completedMeters'] as int));
+    final int totalConsumers = _allConsumers.length;
+    final int totalPuroks = _purokData.length;
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -196,8 +163,8 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
         child: Column(
           children: [
             ProgressBannerWidget(
-              targetReadings: totalTarget,
-              completedReadings: totalCompleted,
+              targetReadings: totalConsumers,
+              completedReadings: totalConsumers, // All consumers are "available"
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 4.w),
@@ -225,28 +192,45 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
               ),
             ),
             SizedBox(height: 2.h),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 4.w,
-                  mainAxisSpacing: 2.h,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: _purokData.length,
-                itemBuilder: (context, index) {
-                  final purok = _purokData[index];
-                  return PurokCardWidget(
-                    purokData: purok,
-                    onTap: () => _navigateToPurok(purok),
-                    onLongPress: () => _showQuickActionsModal(purok),
-                  );
-                },
-              ),
-            ),
+            _isLoading
+                ? Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(
+                          color: colorScheme.primary,
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Loading puroks...',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 4.w,
+                        mainAxisSpacing: 2.h,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: _purokData.length,
+                      itemBuilder: (context, index) {
+                        final purok = _purokData[index];
+                        return PurokCardWidget(
+                          purokData: purok,
+                          onTap: () => _navigateToPurok(purok),
+                          onLongPress: () => _showQuickActionsModal(purok),
+                        );
+                      },
+                    ),
+                  ),
             SizedBox(height: 10.h),
           ],
         ),
@@ -357,11 +341,38 @@ class _PurokSelectionDashboardState extends State<PurokSelectionDashboard>
   }
 
   void _navigateToPurok(Map<String, dynamic> purok) {
+    // Find consumers for this purok from already loaded data
+    final purokNumber = purok['name'].toString().replaceFirst('Purok ', '');
+    debugPrint('Navigating to purok: ${purok['name']}');
+    debugPrint('Extracted purok number: $purokNumber');
+    debugPrint('Available purok groups: ${_purokGroups.map((g) => g['purok'])}');
+
+    final consumers = _findConsumersForPurok(purokNumber);
+    debugPrint('Found ${consumers.length} consumers for purok $purokNumber');
+    debugPrint('First consumer sample: ${consumers.isNotEmpty ? consumers.first : 'No consumers'}');
+
+    final navigationData = {
+      'purok': purok,
+      'consumers': consumers,
+    };
+    debugPrint('Navigation data: $navigationData');
+
     Navigator.pushNamed(
       context,
       '/meter-reading-list',
-      arguments: purok,
+      arguments: navigationData,
     );
+  }
+
+  List<Map<String, dynamic>> _findConsumersForPurok(String purokNumber) {
+    // Find the purok group and return its consumers
+    final purokGroup = _purokGroups.firstWhere(
+      (group) => group['purok'].toString() == purokNumber,
+      orElse: () => {'consumers': []},
+    );
+
+    final consumers = purokGroup['consumers'] as List? ?? [];
+    return consumers.map((consumer) => Map<String, dynamic>.from(consumer)).toList();
   }
 
   void _showQuickActionsModal(Map<String, dynamic> purok) {

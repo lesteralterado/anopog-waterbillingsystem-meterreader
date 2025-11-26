@@ -5,12 +5,10 @@ import 'package:path/path.dart' as p;
 
 import 'config.dart';
 import 'connectivity_service.dart';
-import 'offline_sync_service.dart';
 
 class MeterReadingService {
   final Dio _dio;
   final ConnectivityService _connectivityService = ConnectivityService();
-  final OfflineSyncService _offlineSyncService = OfflineSyncService();
 
   MeterReadingService({Dio? dio})
       : _dio = dio ?? Dio(BaseOptions(baseUrl: Config.apiBaseUrl));
@@ -30,20 +28,9 @@ class MeterReadingService {
   }) async {
     if (userId <= 0) throw ArgumentError('Invalid userId');
 
-    // Check if we're online
+    // If offline, signal caller so it can queue the reading locally.
     if (!_connectivityService.isOnline) {
-      // Queue for offline sync
-      await _offlineSyncService.queueReading(
-        userId: userId,
-        readingValue: readingValue,
-        readingDate: readingDate,
-        imagePath: imageFile?.path,
-        latitude: gpsLocation?['latitude'],
-        longitude: gpsLocation?['longitude'],
-        accuracy: gpsLocation?['accuracy'],
-        notes: notes,
-      );
-      return null; // Indicate that reading was queued
+      throw StateError('offline');
     }
 
     final formMap = <String, dynamic>{
@@ -86,26 +73,7 @@ class MeterReadingService {
 
       throw Exception('Server responded with status ${resp.statusCode}');
     } on DioException catch (e) {
-      // If network error, queue for offline sync
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
-
-        await _offlineSyncService.queueReading(
-          userId: userId,
-          readingValue: readingValue,
-          readingDate: readingDate,
-          imagePath: imageFile?.path,
-          latitude: gpsLocation?['latitude'],
-          longitude: gpsLocation?['longitude'],
-          accuracy: gpsLocation?['accuracy'],
-          notes: notes,
-        );
-        return null; // Indicate that reading was queued
-      }
-
-      // Provide helpful error messages for other types of errors
+      // Rethrow and let callers decide whether to queue locally.
       if (e.response != null) {
         throw Exception(
             'Upload failed: ${e.response?.statusCode} ${e.response?.data}');

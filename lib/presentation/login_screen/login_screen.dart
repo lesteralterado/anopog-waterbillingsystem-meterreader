@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
+import '../../core/user_service.dart';
+import '../../core/database_helper.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/barangay_logo_widget.dart';
 import './widgets/biometric_login_widget.dart';
@@ -23,26 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  final UserService _userService = UserService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   bool _isLoading = false;
   bool _biometricEnabled = false;
   String? _errorMessage;
-
-  // Mock credentials for different user types
-  final Map<String, Map<String, String>> _mockCredentials = {
-    'admin': {
-      'password': 'admin123',
-      'role': 'Administrator',
-    },
-    'reader01': {
-      'password': 'reader123',
-      'role': 'Meter Reader',
-    },
-    'supervisor': {
-      'password': 'super123',
-      'role': 'Supervisor',
-    },
-  };
 
   @override
   void initState() {
@@ -76,6 +64,32 @@ class _LoginScreenState extends State<LoginScreen> {
     // For demo, we could pre-fill with last used username
   }
 
+  Future<void> _fetchAndStoreConsumers() async {
+    try {
+      final consumers = await _userService.fetchConsumers();
+      await _databaseHelper.deleteAllConsumers(); // Clear old data
+      for (final consumer in consumers) {
+        final consumerData = {
+          DatabaseHelper.columnConsumerId: consumer['id'],
+          DatabaseHelper.columnUsername: consumer['username'],
+          DatabaseHelper.columnRoleId: consumer['role_id'],
+          DatabaseHelper.columnPurok: consumer['purok'],
+          DatabaseHelper.columnMeterNumber: consumer['meter_number'],
+          DatabaseHelper.columnFullName: consumer['full_name'],
+          DatabaseHelper.columnAddress: consumer['address'],
+          DatabaseHelper.columnPhone: consumer['phone'],
+          DatabaseHelper.columnEmail: consumer['email'],
+          DatabaseHelper.columnRoleName: consumer['role']?['name'],
+          DatabaseHelper.columnCreatedAt: DateTime.now().toIso8601String(),
+        };
+        await _databaseHelper.insertConsumer(consumerData);
+      }
+    } catch (e) {
+      // Silently fail - consumers can be fetched later
+      debugPrint('Failed to fetch consumers: $e');
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (_isLoading) return;
 
@@ -91,42 +105,32 @@ class _LoginScreenState extends State<LoginScreen> {
     HapticFeedback.lightImpact();
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      final username = _usernameController.text.trim().toLowerCase();
+      final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
 
-      // Check credentials
-      if (_mockCredentials.containsKey(username)) {
-        final userCredentials = _mockCredentials[username]!;
-        if (userCredentials['password'] == password) {
-          // Success - provide success haptic feedback
-          HapticFeedback.heavyImpact();
+      // Authenticate via API
+      final user = await _userService.login(username, password);
 
-          // Navigate to dashboard
-          if (mounted) {
-            Navigator.pushReplacementNamed(
-                context, '/purok-selection-dashboard');
-          }
-          return;
+      if (user != null) {
+        // Fetch and store consumers in background
+        _fetchAndStoreConsumers();
+
+        // Success - provide success haptic feedback
+        HapticFeedback.heavyImpact();
+
+        // Navigate to dashboard
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+              context, '/purok-selection-dashboard');
         }
+        return;
       }
-
-      // Invalid credentials
+    } catch (e) {
       setState(() {
-        _errorMessage =
-            'Invalid username or password. Please check your credentials and try again.';
+        _errorMessage = e.toString();
       });
 
       // Provide error haptic feedback
-      HapticFeedback.heavyImpact();
-    } catch (e) {
-      setState(() {
-        _errorMessage =
-            'Network error. Please check your connection and try again.';
-      });
-
       HapticFeedback.heavyImpact();
     } finally {
       if (mounted) {
