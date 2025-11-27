@@ -151,12 +151,28 @@ class HomeownerCardWidget extends StatelessWidget {
                                 color: statusBgColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                status.toUpperCase(),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    status.toUpperCase(),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: statusColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (homeowner['queued'] == true) ...[
+                                    SizedBox(width: 2.w),
+                                    Tooltip(
+                                      message: 'Pending sync',
+                                      child: Icon(
+                                        Icons.schedule,
+                                        size: 12,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                           ],
@@ -285,6 +301,8 @@ class HomeownerCardWidget extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'completed':
         return Colors.green;
+      case 'queued':
+        return Colors.blue;
       case 'pending':
         return Colors.orange;
       case 'issue':

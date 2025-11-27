@@ -491,12 +491,45 @@ class _MeterReadingListState extends State<MeterReadingList> {
     );
   }
 
-  void _openMeterReadingEntry(Map<String, dynamic> homeowner) {
+  Future<void> _openMeterReadingEntry(Map<String, dynamic> homeowner) async {
     debugPrint('Opening meter reading entry for homeowner: $homeowner');
     debugPrint('Homeowner ID: ${homeowner['id']}');
     debugPrint('Homeowner name: ${homeowner['name']}');
 
-    Navigator.pushNamed(context, '/meter-reading-entry', arguments: homeowner);
+    final result = await Navigator.pushNamed(context, '/meter-reading-entry',
+        arguments: homeowner);
+
+    // If the entry returned a result, update the homeowner card accordingly
+    if (result is Map<String, dynamic>) {
+      final int? homeownerId = result['homeownerId'] is int
+          ? result['homeownerId'] as int
+          : (result['homeownerId'] is String
+              ? int.tryParse(result['homeownerId'])
+              : null);
+
+      if (homeownerId != null) {
+        setState(() {
+          for (final h in _allHomeowners) {
+            if ((h['id'] as int?) == homeownerId) {
+              h['status'] = result['status'] as String? ?? 'completed';
+              if (result.containsKey('currentReading')) {
+                h['previousReading'] = result['currentReading'];
+              }
+              h['lastReadingDate'] = DateTime.now();
+              break;
+            }
+          }
+        });
+
+        _applyFilters();
+      }
+
+      // If the meter reading entry returned receipt data, navigate to billing receipt
+      if (result.containsKey('receipt') && result['receipt'] != null) {
+        Navigator.pushNamed(context, '/billing-receipt-generation',
+            arguments: result['receipt']);
+      }
+    }
   }
 
   @override

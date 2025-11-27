@@ -269,18 +269,16 @@ class _ReadingHistoryState extends State<ReadingHistory>
       }
 
       if (_advancedFilters['minReading'] != null) {
+        final minR = parseDouble(_advancedFilters['minReading']);
         filtered = filtered
-            .where((reading) =>
-                (reading['consumption'] as double) >=
-                (_advancedFilters['minReading'] as double))
+            .where((reading) => parseDouble(reading['consumption']) >= minR)
             .toList();
       }
 
       if (_advancedFilters['maxReading'] != null) {
+        final maxR = parseDouble(_advancedFilters['maxReading']);
         filtered = filtered
-            .where((reading) =>
-                (reading['consumption'] as double) <=
-                (_advancedFilters['maxReading'] as double))
+            .where((reading) => parseDouble(reading['consumption']) <= maxR)
             .toList();
       }
 
@@ -535,7 +533,7 @@ class _ReadingHistoryState extends State<ReadingHistory>
   double get _averageConsumption {
     if (_filteredReadings.isEmpty) return 0.0;
     final total = _filteredReadings.fold<double>(0.0,
-        (sum, reading) => sum + (reading['consumption'] as double? ?? 0.0));
+      (sum, reading) => sum + parseDouble(reading['consumption']));
     return total / _filteredReadings.length;
   }
 

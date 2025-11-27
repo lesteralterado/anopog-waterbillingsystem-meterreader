@@ -181,7 +181,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
           _buildDetailRow(
               'Rate per cu.m:', '₱${receiptData["ratePerCubicMeter"]}'),
           _buildDetailRow('Basic Charge:', '₱${receiptData["basicCharge"]}'),
-          if ((receiptData["penalties"] as double) > 0)
+          if (parseDouble(receiptData["penalties"]) > 0)
             _buildDetailRow('Penalties:', '₱${receiptData["penalties"]}',
                 isHighlight: true),
         ],

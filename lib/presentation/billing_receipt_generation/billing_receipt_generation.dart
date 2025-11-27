@@ -43,36 +43,21 @@ class _BillingReceiptGenerationState extends State<BillingReceiptGeneration> {
       _receiptData = await _userService.fetchBillingData();
       _calculateTotalAmount();
     } catch (e) {
-      // Handle error, perhaps show snackbar or set default data
-      _receiptData = {
-        "receiptNumber": "WU-2025-001234",
-        "issueDate": "01/05/2025",
-        "barangayName": "Anopog",
-        "homeownerName": "Maria Santos Rodriguez",
-        "address": "123 Sampaguita Street, Purok 3",
-        "meterNumber": "WM-789456",
-        "purok": "Purok 3",
-        "billingPeriod": "December 2024",
-        "previousReading": 145.5,
-        "currentReading": 158.2,
-        "consumption": 12.7,
-        "ratePerCubicMeter": 25.50,
-        "basicCharge": 150.00,
-        "penalties": 0.00,
-        "totalAmount": "473.85",
-        "dueDate": "01/20/2025",
-        "paymentTerms":
-            "Payment is due within 15 days from issue date. Late payments will incur a 10% penalty fee.",
-        "qrCode": "QR-WU-2025-001234-VERIFY",
-        "homeownerPhone": "+639123456789",
-        "homeownerEmail": "maria.santos@email.com",
-      };
-      _calculateTotalAmount();
+      // On error: do not fall back to hard-coded mock data. Provide
+      // an empty state so the UI can show an explicit retry action.
+      _receiptData = {};
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load billing data: ${e.toString()}'),
             backgroundColor: AppTheme.lightTheme.colorScheme.error,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: AppTheme.lightTheme.colorScheme.onPrimary,
+              onPressed: () {
+                _fetchBillingData();
+              },
+            ),
           ),
         );
       }
@@ -86,17 +71,28 @@ class _BillingReceiptGenerationState extends State<BillingReceiptGeneration> {
   }
 
   void _calculateTotalAmount() {
-    final consumption = _receiptData["consumption"] as double;
-    final rate = _receiptData["ratePerCubicMeter"] as double;
-    final basicCharge = _receiptData["basicCharge"] as double;
-    final penalties = _receiptData["penalties"] as double;
+    // Be defensive about types coming from the backend.
+    double parseDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0.0;
+    }
+
+    final consumption = parseDouble(_receiptData["consumption"]);
+    final rate = parseDouble(_receiptData["ratePerCubicMeter"]);
+    final basicCharge = parseDouble(_receiptData["basicCharge"]);
+    final penalties = parseDouble(_receiptData["penalties"]);
 
     final consumptionCharge = consumption * rate;
     final total = basicCharge + consumptionCharge + penalties;
 
-    setState(() {
+    if (mounted) {
+      setState(() {
+        _receiptData["totalAmount"] = total.toStringAsFixed(2);
+      });
+    } else {
       _receiptData["totalAmount"] = total.toStringAsFixed(2);
-    });
+    }
   }
 
   void _onFieldChanged(String fieldKey, dynamic value) {
@@ -115,15 +111,19 @@ class _BillingReceiptGenerationState extends State<BillingReceiptGeneration> {
   bool _validateFields() {
     _validationErrors.clear();
 
-    if ((_receiptData["ratePerCubicMeter"] as double) <= 0) {
+    final rateVal = parseDouble(_receiptData["ratePerCubicMeter"]);
+    final basicVal = parseDouble(_receiptData["basicCharge"]);
+    final penaltiesVal = parseDouble(_receiptData["penalties"]);
+
+    if (rateVal <= 0) {
       _validationErrors["ratePerCubicMeter"] = "Rate must be greater than 0";
     }
 
-    if ((_receiptData["basicCharge"] as double) < 0) {
+    if (basicVal < 0) {
       _validationErrors["basicCharge"] = "Basic charge cannot be negative";
     }
 
-    if ((_receiptData["penalties"] as double) < 0) {
+    if (penaltiesVal < 0) {
       _validationErrors["penalties"] = "Penalties cannot be negative";
     }
 
@@ -230,7 +230,7 @@ class _BillingReceiptGenerationState extends State<BillingReceiptGeneration> {
                       pw.Text(
                           'Rate per cu.m: ₱${_receiptData["ratePerCubicMeter"]}'),
                       pw.Text('Basic Charge: ₱${_receiptData["basicCharge"]}'),
-                      if ((_receiptData["penalties"] as double) > 0)
+                      if (parseDouble(_receiptData["penalties"]) > 0)
                         pw.Text('Penalties: ₱${_receiptData["penalties"]}'),
                     ],
                   ),
@@ -528,7 +528,7 @@ Barangay ${_receiptData["barangayName"]} Water Utility Office
                 pw.Text('Consumption: ${_receiptData["consumption"]} cu.m'),
                 pw.Text('Rate: ₱${_receiptData["ratePerCubicMeter"]}/cu.m'),
                 pw.Text('Basic Charge: ₱${_receiptData["basicCharge"]}'),
-                if ((_receiptData["penalties"] as double) > 0)
+                if (parseDouble(_receiptData["penalties"]) > 0)
                   pw.Text('Penalties: ₱${_receiptData["penalties"]}'),
                 pw.Divider(),
                 pw.Text(
@@ -591,6 +591,45 @@ Barangay ${_receiptData["barangayName"]} Water Utility Office
         body: Center(
           child: CircularProgressIndicator(
             color: AppTheme.lightTheme.colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    // If loading finished but no receipt data is available, show retry UI
+    if (_receiptData.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppTheme.lightTheme.colorScheme.surfaceContainerLowest,
+        appBar: AppBar(
+          title: Text(
+            'Billing Receipt Generation',
+            style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+              color: AppTheme.lightTheme.colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: AppTheme.lightTheme.colorScheme.primary,
+          foregroundColor: AppTheme.lightTheme.colorScheme.onPrimary,
+          elevation: 2,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Failed to load billing data.',
+                  style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _fetchBillingData();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );

@@ -142,6 +142,8 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
     _notesController.dispose();
     _scrollController.dispose();
     _offlineSyncService.dispose();
+    // Ensure camera is cleaned up (in case it was initialized)
+    debugPrint('MeterReadingEntry disposed');
     super.dispose();
   }
 
@@ -262,9 +264,16 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
           backgroundColor: Colors.orange,
           textColor: Colors.white,
         );
+
+        // Return to previous screen with result so the homeowner card can be updated
+        Navigator.pop(context, {
+          'homeownerId': userId,
+          'status': 'pending',
+          'currentReading': _currentReading,
+          'queued': true,
+        });
         return;
       }
-
       // Call service to upload
       final service = MeterReadingService();
       try {
@@ -294,6 +303,15 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
+
+        // Return to previous screen with result so the homeowner card can be updated
+        Navigator.pop(context, {
+          'homeownerId': userId,
+          'status': 'completed',
+          'currentReading': _currentReading,
+          'receipt': result,
+        });
+        return;
       } catch (e) {
         // On network error, queue the reading for later sync
         debugPrint('Upload failed, queuing offline: $e');
@@ -321,12 +339,18 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
           backgroundColor: Colors.orange,
           textColor: Colors.white,
         );
-      }
 
-      // Navigate to billing receipt generation (server may return created id/details)
-      Navigator.pushReplacementNamed(context, '/billing-receipt-generation');
-    } catch (e, st) {
-      debugPrint('Failed to upload reading: $e\n$st');
+        // Return to previous screen with result so the homeowner card can be updated
+        Navigator.pop(context, {
+          'homeownerId': userId,
+          'status': 'pending',
+          'currentReading': _currentReading,
+          'queued': true,
+        });
+        return;
+      }
+    } catch (e) {
+      // Outer catch for any validation/general errors
       Fluttertoast.showToast(
         msg: "Failed to save reading: ${e.toString()}",
         toastLength: Toast.LENGTH_LONG,
@@ -334,6 +358,12 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
+      // Return to previous screen with error indication
+      Navigator.pop(context, {
+        'homeownerId': _homeownerData['id'] as int? ?? -1,
+        'status': 'error',
+        'currentReading': _currentReading,
+      });
     } finally {
       setState(() {
         _isSaving = false;
@@ -349,7 +379,7 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
     try {
       await Future.delayed(const Duration(seconds: 1));
 
-      final estimatedReading = (_homeownerData['previousReading'] as double) +
+      final estimatedReading = parseDouble(_homeownerData['previousReading']) +
           15.0; // Average consumption
 
       final readingData = {
@@ -700,7 +730,7 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
                           ReadingInputSection(
                             controller: _readingController,
                             previousReading:
-                                _homeownerData['previousReading'] as double,
+                                parseDouble(_homeownerData['previousReading']),
                             onReadingChanged: (reading) {
                               setState(() {
                                 _currentReading = reading;

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'connectivity_service.dart';
 import 'database_helper.dart';
 import 'meter_reading_service.dart';
+import 'app_export.dart';
 
 class OfflineSyncService {
   static final OfflineSyncService _instance = OfflineSyncService._internal();
@@ -118,7 +119,7 @@ class OfflineSyncService {
 
           // Prepare data for upload
           final userId = reading['user_id'] as int;
-          final readingValue = reading['reading_value'] as double;
+          final readingValue = parseDouble(reading['reading_value']);
           final readingDate = reading['reading_date'] != null
               ? DateTime.parse(reading['reading_date'])
               : DateTime.now();
@@ -133,11 +134,16 @@ class OfflineSyncService {
 
           Map<String, double>? gpsLocation;
           if (reading['latitude'] != null && reading['longitude'] != null) {
-            gpsLocation = {
-              'latitude': reading['latitude'] as double,
-              'longitude': reading['longitude'] as double,
-              if (reading['accuracy'] != null) 'accuracy': reading['accuracy'] as double,
-            };
+            final lat = tryParseNullableDouble(reading['latitude']);
+            final lng = tryParseNullableDouble(reading['longitude']);
+            final acc = tryParseNullableDouble(reading['accuracy']);
+            if (lat != null && lng != null) {
+              gpsLocation = {
+                'latitude': lat,
+                'longitude': lng,
+                if (acc != null) 'accuracy': acc,
+              };
+            }
           }
 
           // Upload to server

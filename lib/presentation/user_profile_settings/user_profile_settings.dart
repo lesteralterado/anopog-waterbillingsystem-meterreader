@@ -28,7 +28,7 @@ class _UserProfileSettingsState extends State<UserProfileSettings> {
     "emergencyPhone": "+63 961 817 9619",
     "assignedPuroks": ["Purok 1", "Purok 2", "Purok 3"],
     "profileImage":
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+        "https://res.cloudinary.com/dhxi75eld/image/upload/v1764207443/3c49c69d-bbc6-4c3a-918a-97d636559204_xcwl0t.jpg",
     "joinDate": "January 15, 2024",
     "lastLogin": "September 5, 2025 10:30 AM",
   };
