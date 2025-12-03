@@ -4,6 +4,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
 import '../../core/user_service.dart';
+import '../../core/meter_reading_service.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/batch_operations_toolbar_widget.dart';
 import './widgets/bulk_actions_fab_widget.dart';
@@ -496,8 +497,33 @@ class _MeterReadingListState extends State<MeterReadingList> {
     debugPrint('Homeowner ID: ${homeowner['id']}');
     debugPrint('Homeowner name: ${homeowner['name']}');
 
+    Map<String, dynamic> navigationArgs = homeowner;
+
+    // Fetch latest readings from API
+    try {
+      final service = MeterReadingService();
+      final latestReadings =
+          await service.fetchLatestReadings(homeowner['id'] as int);
+
+      if (latestReadings != null) {
+        // Update homeowner data with API readings
+        navigationArgs = Map<String, dynamic>.from(homeowner);
+        navigationArgs['previousReading'] =
+            (latestReadings['previous'] as num?)?.toDouble() ?? 0.0;
+        navigationArgs['currentReading'] =
+            (latestReadings['present'] as num?)?.toDouble() ?? 0.0;
+        debugPrint(
+            'Fetched latest readings: previous=${navigationArgs['previousReading']}, current=${navigationArgs['currentReading']}');
+      } else {
+        debugPrint('Failed to fetch latest readings, using default data');
+      }
+    } catch (e) {
+      debugPrint('Error fetching latest readings: $e');
+      // Use original data if API fails
+    }
+
     final result = await Navigator.pushNamed(context, '/meter-reading-entry',
-        arguments: homeowner);
+        arguments: navigationArgs);
 
     // If the entry returned a result, update the homeowner card accordingly
     if (result is Map<String, dynamic>) {

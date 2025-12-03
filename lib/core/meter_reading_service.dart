@@ -13,6 +13,30 @@ class MeterReadingService {
   MeterReadingService({Dio? dio})
       : _dio = dio ?? Dio(BaseOptions(baseUrl: Config.apiBaseUrl));
 
+  /// Fetches the latest two meter readings for a user.
+  /// Returns a map with 'present' (most recent) and 'previous' (one before that) readings.
+  Future<Map<String, dynamic>?> fetchLatestReadings(int userId) async {
+    if (userId <= 0) throw ArgumentError('Invalid userId');
+
+    try {
+      final resp = await _dio.get('/api/readings/latest/$userId');
+
+      if (resp.statusCode != null &&
+          resp.statusCode! >= 200 &&
+          resp.statusCode! < 300) {
+        return Map<String, dynamic>.from(resp.data ?? {});
+      }
+
+      throw Exception('Server responded with status ${resp.statusCode}');
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(
+            'Fetch failed: ${e.response?.statusCode} ${e.response?.data}');
+      }
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
   /// Uploads a meter reading to the backend.
   /// If offline, queues the reading for later sync.
   ///

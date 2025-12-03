@@ -7,12 +7,14 @@ import '../../../core/app_export.dart';
 class ReadingInputSection extends StatefulWidget {
   final TextEditingController controller;
   final double previousReading;
+  final double currentReading;
   final ValueChanged<double>? onReadingChanged;
 
   const ReadingInputSection({
     super.key,
     required this.controller,
     required this.previousReading,
+    required this.currentReading,
     this.onReadingChanged,
   });
 
@@ -62,9 +64,9 @@ class _ReadingInputSectionState extends State<ReadingInputSection> {
     _hasWarning = false;
     _warningMessage = '';
 
-    if (reading < widget.previousReading) {
+    if (reading < widget.currentReading) {
       _hasWarning = true;
-      _warningMessage = 'Reading cannot be less than previous reading';
+      _warningMessage = 'Reading cannot be less than current reading';
     } else if (_consumption > 100) {
       _hasWarning = true;
       _warningMessage = 'Unusually high consumption detected';
@@ -217,6 +219,26 @@ class _ReadingInputSectionState extends State<ReadingInputSection> {
                     ),
                     Text(
                       '${widget.previousReading.toStringAsFixed(1)} m³',
+                      style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTheme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 1.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Current Reading:',
+                      style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.lightTheme.colorScheme.onSurface
+                            .withValues(alpha: 0.8),
+                      ),
+                    ),
+                    Text(
+                      '${widget.currentReading.toStringAsFixed(1)} m³',
                       style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppTheme.lightTheme.colorScheme.onSurface,

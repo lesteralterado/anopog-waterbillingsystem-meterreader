@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
-import '../../../widgets/custom_icon_widget.dart';
+// import '../../../widgets/custom_icon_widget.dart';
 
 class BarangayLogoWidget extends StatelessWidget {
   const BarangayLogoWidget({super.key});

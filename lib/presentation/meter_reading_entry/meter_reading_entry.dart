@@ -154,7 +154,7 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
       setState(() {
         _currentReading = reading;
         _isReadingValid =
-            reading > (_homeownerData['previousReading'] as double? ?? 0.0);
+            reading > (_homeownerData['currentReading'] as double? ?? 0.0);
         _hasUnsavedChanges = true;
       });
     } else {
@@ -731,6 +731,8 @@ class _MeterReadingEntryState extends State<MeterReadingEntry> {
                             controller: _readingController,
                             previousReading:
                                 parseDouble(_homeownerData['previousReading']),
+                            currentReading:
+                                parseDouble(_homeownerData['currentReading']),
                             onReadingChanged: (reading) {
                               setState(() {
                                 _currentReading = reading;
